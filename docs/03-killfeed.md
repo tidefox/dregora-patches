@@ -48,11 +48,11 @@ elif null && tracked.lastPlayerHit within 5 s   → killer = that player, verb =
 else                                    → environment, no announce (unless player death)
 
 weapon:
-  immediate is EntityArrow & has tag warband:launcher → launcher stack
+  immediate has tag warband:shot (core/ShotTag) → its launcher stack
   immediate == killer                    → killer main hand
   else                                   → killer main hand, marked "(indirect)"
 ```
-Projectile tagging: on `ArrowLooseEvent` stash `pendingLauncher[player] = bow.copy()` for this tick; on `EntityJoinWorldEvent` for `EntityArrow` with `shootingEntity == player` → write stash (or fallback `getActiveItemStack()`, then any held item whose class/registry contains `bow|crossbow`) into NBT `warband:launcher`. Covers Spartan crossbows (⚠ verify their bolts extend `EntityArrow`).
+Projectile tagging: done by `core/ProjectileOrigin` (built in P2, `06 §2.1`) — `ShotTag.read(immediate).launcher`. No separate `LauncherTagger`. Covers Spartan crossbows if their bolts extend `EntityArrow` (⚠ verify with `/wb debug kill`).
 
 ### 2.3 Fight tracking (tracked targets only)
 - On `LivingDamageEvent` where victim tracked & attacker resolves to player: `fights[victimUUID].add(player, amount)`, set `start` on first hit.
@@ -84,8 +84,7 @@ Blight kills: Scaling Health already broadcasts; we only send the `↳` follow-u
 ```
 kill/
   KillModule.java
-  LauncherTagger.java     ArrowLooseEvent + EntityJoinWorldEvent
-  Tracked.java            isTracked(entity) → delegates to trick/AnnouncedMobs (passive, no reflection)
+  Tracked.java            isTracked(entity) → trick/AnnouncedMobs.cached (per-entity cache, passive)
   FightTracker.java       LivingDamageEvent accumulation, expiry tick
   Attribution.java        killer/via/weapon resolution
   KillAnnouncer.java      LivingDeathEvent → components → broadcast
@@ -94,7 +93,7 @@ kill/
 ### Steps
 1. `/wb debug damage` (core) on the live pack: record source types for bow, crossbow, Ice and Fire lightning chain, Lycanites pet hits, Blight hits. Fill ⚠ items.
 2. Melee attribution + hover weapon; player-death follow-up.
-3. LauncherTagger; test longbow, Spartan crossbow, Multishot/Splitshot arrows (every arrow tagged).
+3. Launcher from `ShotTag` (ProjectileOrigin, P2); test longbow, Spartan crossbow, Multishot/Splitshot arrows (every arrow tagged).
 4. Tracked detection via `AnnouncedMobs` (already built in P2).
 5. FightTracker + assists + duration.
 6. Pet credit (Raiko, dragons).

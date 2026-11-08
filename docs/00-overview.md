@@ -29,7 +29,7 @@ Per-mod versions, sources and the classes we touch: `reference/mods-context.md`.
 Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`, plus `ideas/IDEAS.md`.
 
 ## Warband rules
-1. **Passive observer** for 03/05/06: subscribe at `EventPriority.LOWEST`, `receiveCanceled = false`; never cancel or modify an event.
+1. **Passive observer** for 03/05/06: subscribe at `EventPriority.LOWEST`, `receiveCanceled = false`; never cancel or modify an event. One exception to LOWEST: 05 reads player `LivingHurtEvent` at `LOW`, because First Aid cancels every player hurt at LOWEST (`05 §1`). `/wb debug` listeners use `receiveCanceled = true` (read-only, only while armed).
 2. **No reflection, no imports** of other mods' classes. Detect special mobs through vanilla data (`06 §2.2 AnnouncedMobs`).
 3. `@Mod(acceptableRemoteVersions = "*", serverSideOnly = true)` semantics: vanilla/Forge clients without the jar must connect fine. All output is vanilla chat components (hover `SHOW_ITEM` / `SHOW_ENTITY`, click `RUN_COMMAND`).
 4. 04 (friendly fire) is the only module allowed to cancel/modify damage; config `ff.enabled = false` by default.
@@ -38,9 +38,9 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 ## Shared Warband core
 | Piece | Used by |
 |---|---|
-| `core/ProjectileOrigin` — tags arrows on spawn with launcher stack + origin pos + flags | 03, 05, 06 |
-| `core/DebugDamage` — `/wb debug damage [n]` | 03, 04, 05 |
-| `core/DebugKill` — `/wb debug kill [n]` | 03, 06 |
+| `core/ProjectileOrigin` + `core/ShotTag` — tags arrows on spawn with launcher stack + origin pos + flags (`warband:shot`) | 03, 05, 06 |
+| `core/DebugProbe` — `/wb debug damage [n]` (hurt at HIGHEST/LOW/LOWEST, canceled?, damage event, health Δ after the tick), `/wb debug kill [n]` (registry id, boss flag, NBT/ForgeData/ForgeCaps keys, projectile, shot tag), `/wb debug off` | 03, 04, 05, 06 |
+| `core/Chat`, `core/Fmt` — vanilla hovers, item NBT trimming, 30000-char JSON guard; number/text formatting | all |
 | `core/Allies` — `ALL_PLAYERS` (default) / `VANILLA_TEAM` | 04 |
 | `core/WarbandConfig` — Forge `@Config` | all |
 
@@ -50,7 +50,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | `/recap`, `/recap share` | Warband | all |
 | `/trickshots [player]` | Warband | all |
 | `/ff status` | Warband | all |
-| `/wb debug damage [n]`, `/wb debug kill [n]`, `/wb reload` | Warband | op |
+| `/wb debug damage [n]`, `/wb debug kill [n]`, `/wb debug off`, `/wb reload` | Warband | op |
 | `/reactor list`, `/reactor claim [token]`, `/reactor unclaim <id>` | Patches | all |
 | `/reactor list -exact`, `/reactor admin list [player] [-exact]`, `/reactor admin unclaim <id>`, `/reactor admin keeploaded <id> on\|off` | Patches | op |
 | `/dpatch chunkloads <seconds>`, `/dpatch nc stats`, `/dpatch levelup2 stats` | Patches | op |
@@ -60,7 +60,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 |---|---|---|
 | P0 ✔ | Both folders scaffolded after `tidefox/skinbridge` (RFG 2.0.3); `./gradlew build` green; `runServer` boots; CI smoke boots Forge 2860 + FermiumBooter + both jars | jars build, server starts with jars in dev |
 | P1 | Patches: owner records a baseline on NC 2.19a (no NC update) → one jar: NC reactor freeze (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
-| P2 | Warband: core + 05 + 06 | recap delivered on respawn; trick shot fires only on announced mobs |
+| P2 (code done) | Warband: core + 05 + 06 | recap delivered on respawn; trick shot fires only on announced mobs |
 | P3 | Warband: 03, then 04 | per doc tests |
 
 ## Open decisions (defaults in use)

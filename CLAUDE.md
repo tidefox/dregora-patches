@@ -33,7 +33,7 @@ Docs marked **⚠ verify** are API/behavior claims not yet confirmed against the
 ## Hard rules
 1. **Java 8 language level.** No `var`, no records, no Java 9+ APIs.
 2. **Server-only.** Players install nothing. Vanilla/Forge clients without the jars must connect normally. Output only via vanilla chat components.
-3. **Warband never imports or reflects into other mods**, never cancels/modifies events (exception: `04` friendly fire, config-gated, default off). Listen at `EventPriority.LOWEST`, `receiveCanceled = false`.
+3. **Warband never imports or reflects into other mods**, never cancels/modifies events (exception: `04` friendly fire, config-gated, default off). Listen at `EventPriority.LOWEST`, `receiveCanceled = false` (one exception: `05` reads player hurts at `LOW` because First Aid cancels them at LOWEST; `/wb debug` reads canceled events while armed).
 4. **Dregora Patches** is the only place for mixins. Targets in mod classes use `@Mixin(value = X.class, remap = false)` and **`require = 0` on every injector** (a renamed target must disable the patch, never crash the server). Mixin member prefix `dp$`. Register with FermiumBooter (already in the pack, 1.4.1) — **must not ship a hard dependency on MixinBooter**.
 5. Chat component JSON < 32767 chars or the receiver gets kicked.
 6. Never edit the live server's world files. Anything touching the server (deploy, restart, rcon) → ask the user first.
@@ -71,6 +71,8 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 
 **P1 status: code done** (2026-11-08, `docs/07 §4.6`): freeze + claims, chunk guard, Level Up! 2 scan fix, `/reactor`, `/dpatch nc|levelup2 stats`, `/dpatch chunkloads`; all mixins apply on a real Forge 2860 server with NC 2.19a + Level Up! 2 (`ci/smoke.sh` now boots with them). Waiting on: owner baseline on the live server, then the live measurements. Still untested (needs a client): claim prompt/claim/unclaim, keep-loaded, owned-furnace bonus. Gotchas found: vanilla `EmptyChunk` is client-only (a mixin referencing it crashes the dedicated server even with `require = 0`); Forge-added methods like `loadChunk(IILRunnable)` need `remap = false`; `TileFissionController` can't be compiled against (OC/IC2 interfaces), read it by reflection.
 
+**P2 status: code done** (2026-11-08): core (`ProjectileOrigin`/`ShotTag`, `DebugProbe` = `/wb debug damage|kill|off`, `Chat`, `Fmt`, config), `05` recap (`/recap`, `/recap share`), `06` trick shots (`/trickshots [player]`, records in `world/data/warband_trickshots.dat`); 20 unit tests; smoke boots it and runs `/wb debug kill`, `/trickshots`. Still untested (needs a client): every in-game test in `05 §3` / `06 §3`. Next: run `/wb debug damage` and `/wb debug kill` on the live pack (First Aid delta path, Blight/Champions/dragon markers → `trickshots.mobs` / `nbtMarkers`). Found: First Aid 1.6.22 cancels every player `LivingHurtEvent` at LOWEST, so the recap reads hurts at LOW and resolves from the health delta (`05 §1`); `LivingDamageEvent`'s amount is after absorption.
+
 RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-beta-2 only; re-check if the server moves to 1.2.x). Keep Chunk Pregenerator idle during P1 measurements.
 
 ## Facts already verified (don't re-research)
@@ -81,7 +83,7 @@ RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-bet
 - Level Up! 2 `FurnaceEfficiencyBonus.doFurnaceTicks` streams the whole `loadedTileEntityList` every world tick calling `hasCapability`; the capability is only attached to `TileEntityFurnace` / `TileEntityBrewingStand` subclasses (✔ verified against the 1.1.23 jar, `docs/08 §1.2`).
 - NuclearCraft 2.19a = commit `37cc6e3` on branch `1.12.2` of `tomdodd4598/NuclearCraft`. `TileFissionPort.onAdded → findController` (4 orientations × up to `fission_max_size+2` per axis via `BlockFinder.find → world.getBlockState`); `findMaster()` is empty for ports; `NCTile.isAdded`, `TileDummy.masterPosition`, `NCConfig.fission_max_size` are public. `TileActiveCooler.spreadFluidToSide` and `TileFissionPort.pushPortEnergyToSide` call `world.getTileEntity(neighbor)` with no loaded-check. `TileDummy.hasMaster()` exists (null `masterPosition` → false, no lookup). `TileFissionPort`, `TileDummy`, `TileActiveCooler` are identical in 2.19a and 2.19d (`33568a8`); only `BlockFinder.java` differs → one mixin covers both.
 - FermiumBooter API: `fermiumbooter.FermiumRegistryAPI.enqueueMixin(...)`, called from the `IFMLLoadingPlugin` constructor.
-- Pack has First Aid 1.6.22 (per-body-part health — affects `05`), ElenaiDodge, Scaling Health 1.3.42, Champions, InfernalMobs, Lycanites 2.0.8.10, Spartan Weaponry 1.6.1, switchbow, RLCombat, ItemPhysic Full, JEI 4.16.1.1012.
+- Pack has First Aid 1.6.22 (per-body-part health; cancels every player `LivingHurtEvent` at LOWEST — ✔ verified, `05 §1`), ElenaiDodge, Scaling Health 1.3.42, Champions, InfernalMobs, Lycanites 2.0.8.10, Spartan Weaponry 1.6.1, switchbow, RLCombat, ItemPhysic Full, JEI 4.16.1.1012.
 
 ## Testing & deploy
 - Unit-test pure logic with JUnit (formatters, aggregation, distance tiers, FailCache invalidation, FF curve).
