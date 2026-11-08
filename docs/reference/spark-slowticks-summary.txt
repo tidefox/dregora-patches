@@ -1,0 +1,115 @@
+== metadata
+{'start': 1794094412951, 'interval_us': 4000, 'aggregator': 'TICKED', 'tick_threshold_us': 1000000, 'included_ticks': 6, 'end': 1794094713127, 'ticks': 5911, 'engine': 'ASYNC'}
+duration_s=300.2
+
+== threads
+       13336 ms  Server thread (590 nodes)
+
+using thread: Server thread  total=13336 ms
+per time window (minute index: ms): [(29901573, 2544), (29901574, 2348), (29901575, 3548), (29901576, 2556), (29901577, 2340)]
+
+== call tree (>= 0.30%, depth <= 40)
+ 99.91%    13324ms java.lang.Thread.run
+   99.91%    13324ms net.minecraft.server.MinecraftServer.run
+     99.91%    13324ms net.minecraft.server.MinecraftServer.func_71217_p
+       99.91%    13324ms net.minecraft.server.dedicated.DedicatedServer.func_71190_q
+         99.91%    13324ms net.minecraft.server.MinecraftServer.func_71190_q
+           99.67%    13292ms net.minecraft.world.WorldServer.func_72939_s
+             99.67%    13292ms net.minecraft.world.World.func_72939_s
+               93.28%    12440ms nc.tile.dummy.TileFissionPort.func_73660_a
+                 88.21%    11764ms nc.tile.dummy.TileDummy.func_73660_a
+                   88.21%    11764ms nc.tile.NCTile.func_73660_a
+                     88.21%    11764ms nc.tile.dummy.TileFissionPort.onAdded
+                       88.21%    11764ms nc.tile.dummy.TileFissionPort.findController
+                         17.10%     2280ms net.minecraft.world.World.func_175625_s
+                           16.44%     2192ms net.minecraft.world.World.func_189508_F
+                             14.70%     1960ms net.minecraft.util.math.Vec3i.equals
+                            0.54%       72ms net.minecraft.world.chunk.Chunk.func_177424_a
+                          6.03%      804ms nc.util.BlockFinder.position
+                            0.99%      132ms net.minecraft.util.math.BlockPos.<init>
+                              0.99%      132ms net.minecraft.util.math.Vec3i.<init>
+                                0.90%      120ms java.lang.Object.<init>
+                          0.84%      112ms nc.tile.dummy.TileDummy.isMaster
+                            0.84%      112ms net.minecraft.world.World.func_175625_s
+                              0.78%      104ms net.minecraft.world.World.func_189508_F
+                                0.33%       44ms net.minecraft.util.math.Vec3i.equals
+                  5.07%      676ms nc.tile.dummy.TileFissionPort.pushEnergy
+                    4.74%      632ms nc.tile.dummy.TileFissionPort.pushPortEnergyToSide
+                      1.98%      264ms nc.tile.dummy.TileDummy.getEnergyStorage
+                        1.98%      264ms nc.tile.dummy.TileDummy.getMaster
+                          1.14%      152ms nc.tile.dummy.TileDummy.hasMaster
+                            1.14%      152ms nc.tile.dummy.TileDummy.isMaster
+                              1.14%      152ms net.minecraft.world.World.func_175625_s
+                                1.11%      148ms net.minecraft.world.World.func_189508_F
+                          0.84%      112ms net.minecraft.world.World.func_175625_s
+                            0.84%      112ms net.minecraft.world.World.func_189508_F
+                      1.83%      244ms nc.tile.dummy.TileDummy.getEnergyConnection
+                        1.83%      244ms nc.tile.dummy.TileDummy.getMaster
+                          0.99%      132ms nc.tile.dummy.TileDummy.hasMaster
+                            0.99%      132ms nc.tile.dummy.TileDummy.isMaster
+                              0.99%      132ms net.minecraft.world.World.func_175625_s
+                                0.99%      132ms net.minecraft.world.World.func_189508_F
+                          0.84%      112ms net.minecraft.world.World.func_175625_s
+                            0.84%      112ms net.minecraft.world.World.func_189508_F
+                      0.48%       64ms net.minecraft.world.World.func_175625_s
+                        0.48%       64ms net.minecraft.world.World.func_189508_F
+                1.77%      236ms nc.tile.fluid.TileActiveCooler.func_73660_a
+                  1.77%      236ms nc.tile.fluid.ITileFluid.spreadFluid
+                    1.77%      236ms nc.tile.fluid.TileActiveCooler.spreadFluidToSide
+                      1.59%      212ms net.minecraft.world.World.func_175625_s
+                        1.56%      208ms net.minecraft.world.World.func_189508_F
+                          0.36%       48ms net.minecraft.util.math.Vec3i.equals
+                1.68%      224ms java.util.ArrayList.contains
+                  1.68%      224ms java.util.ArrayList.indexOf
+                    0.54%       72ms java.lang.Object.equals
+                1.29%      172ms nc.tile.energyFluid.TileBuffer.func_73660_a
+                  0.84%      112ms nc.tile.inventory.ITileInventory.pushStacks
+                    0.84%      112ms nc.tile.energyFluid.TileBuffer.pushStacksToSide
+                      0.75%      100ms net.minecraft.world.World.func_175625_s
+                        0.51%       68ms net.minecraft.world.World.func_175726_f
+                          0.51%       68ms net.minecraft.world.World.func_72964_e
+                            0.51%       68ms net.minecraft.world.gen.ChunkProviderServer.func_186025_d
+                              0.51%       68ms net.minecraft.world.gen.ChunkProviderServer.func_186028_c
+                                0.51%       68ms net.minecraft.world.gen.ChunkProviderServer.loadChunk
+                                  0.36%       48ms net.minecraftforge.common.chunkio.ChunkIOExecutor.syncChunkLoad
+                  0.33%       44ms nc.tile.energy.ITileEnergy.pushEnergy
+                    0.33%       44ms nc.tile.energy.ITileEnergy.pushEnergyToSide
+                0.72%       96ms net.minecraft.world.chunk.Chunk.func_177426_a
+                  0.72%       96ms nc.tile.radiation.TileRadiationScrubber.func_145843_s
+                    0.72%       96ms nc.radiation.environment.RadiationEnvironmentHandler.removeTile
+                0.45%       60ms net.minecraft.world.World.func_72870_g
+                  0.45%       60ms net.minecraft.world.WorldServer.func_72866_a
+                    0.42%       56ms net.minecraft.world.World.func_72866_a
+
+== World.updateEntities children (tile entities etc.)
+ 93.28%    12440ms nc.tile.dummy.TileFissionPort.func_73660_a
+  1.77%      236ms nc.tile.fluid.TileActiveCooler.func_73660_a
+  1.68%      224ms java.util.ArrayList.contains
+  1.29%      172ms nc.tile.energyFluid.TileBuffer.func_73660_a
+  0.72%       96ms net.minecraft.world.chunk.Chunk.func_177426_a
+  0.45%       60ms net.minecraft.world.World.func_72870_g
+  0.21%       28ms nc.tile.radiation.TileRadiationScrubber.func_73660_a
+  0.15%       20ms nc.tile.passive.TilePassiveAbstract.func_73660_a
+  0.03%        4ms net.minecraft.tileentity.TileEntityHopper.func_73660_a
+  0.03%        4ms nc.tile.processor.TileItemFluidProcessor.func_73660_a
+  0.03%        4ms nc.tile.generator.TileItemGenerator.func_73660_a
+
+== ChunkProviderServer.loadChunk callers (total / of which disk read)
+      68ms       64ms  nc.tile.energyFluid.TileBuffer.pushStacksToSide <- nc.tile.inventory.ITileInventory.pushStacks <- nc.tile.energyFluid.TileBuffer.func_73660_a
+      16ms        0ms  nc.tile.dummy.TileFissionPort.findController <- nc.tile.dummy.TileFissionPort.onAdded <- nc.tile.NCTile.func_73660_a
+       4ms        0ms  nc.tile.dummy.TileDummy.isMaster <- nc.tile.dummy.TileFissionPort.findController <- nc.tile.dummy.TileFissionPort.onAdded
+       4ms        0ms  nc.tile.dummy.TileDummy.isMaster <- nc.tile.dummy.TileDummy.hasMaster <- nc.tile.dummy.TileDummy.getMaster
+
+== time by package of innermost non-vanilla frame (self time)
+ 90.16%    12024ms nc.tile
+  6.12%      816ms nc.util
+  1.89%      252ms (vanilla/jdk)
+  0.75%      100ms nc.radiation
+  0.12%       16ms com.Fishmod
+  0.06%        8ms levelup2.skills
+  0.06%        8ms com.github
+  0.03%        4ms libjvm.so
+  0.03%        4ms net.blay09
+  0.03%        4ms nc.recipe
+  0.03%        4ms com.ferreusveritas
+  0.03%        4ms net.mcft
