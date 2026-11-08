@@ -296,7 +296,7 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 | ~~MixinExtras `@WrapOperation` available at runtime under FermiumBooter 1.4.1~~ | ✔ P0: MixinExtras 0.5.0 bundled in FermiumBooter 1.4.1 | freeze, scope |
 | No other pack mixin wraps/redirects `ITickable.update()` in `World.updateEntities`, or targets `ChunkProviderServer.loadChunk/getLoadedChunk` | grep mixin configs + classes in FermiumMixins, RLMixins, EagleMixins, SRPMixins, RLTweaker, fermiumasm | freeze, guard |
 | Forge 2860 `ChunkProviderServer.loadChunk(II Runnable)` calls `fetchDormantChunk` only when `getLoadedChunk` returned null; `getLoadedChunk` writes `unloadQueued = false` | decompile the server jar | guard |
-| `RLC_Nuclear` (Dregora 1.2.0-beta-2) doesn't already patch these classes | `unzip -l`, read its mixin config | everything NC |
+| ~~`RLC_Nuclear` (Dregora 1.2.0-beta-2) doesn't already patch these classes~~ | ✔ not installed on server or client (`reference/mods-context.md`) | everything NC |
 | `BlockEvent.EntityPlaceEvent` exists in Forge 2860 (else `PlaceEvent`) | compile | claims |
 | NC block ids: `nuclearcraft:fission_controller_new_idle/_active/_fixed`, `fission_controller_idle/_active` | NC `NCBlocks` (2.19a) | claims |
 | Level Up! 2 1.1.23 matches the source in `08 §1.2` | javap | `08` |
