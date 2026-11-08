@@ -27,7 +27,12 @@ public class PatchesMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return true;
+        // Late configs target mod classes: skip quietly when the mod is not installed.
+        if (mixinClassName.startsWith(MixinState.MIXIN_PACKAGE + "vanilla.")) return true;
+        ClassLoader cl = PatchesMixinPlugin.class.getClassLoader();
+        boolean present = cl != null && cl.getResource(targetClassName.replace('.', '/') + ".class") != null;
+        if (!present) LOGGER.info("Mixin skipped (target not installed): {} -> {}", mixinClassName, targetClassName);
+        return present;
     }
 
     @Override

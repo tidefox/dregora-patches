@@ -61,6 +61,11 @@ dependencies {
     compileOnly(mixinDep) { transitive = false }
     annotationProcessor mixinDep
 
+    // MixinExtras (@WrapOperation). FermiumBooter 1.4.1 bundles and initialises 0.5.0 at
+    // runtime, so this is compile-only; its AP registers the extra injectors for the refmap.
+    compileOnly "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
+    annotationProcessor "io.github.llamalad7:mixinextras-common:${project.mixinextras_version}"
+
     // FermiumBooter API (FermiumRegistryAPI). Provided by the server at runtime.
     compileOnly "curse.maven:fermiumbooter-${project.fermium_project_id}:${project.fermium_file_id}"
 
