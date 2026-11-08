@@ -3,7 +3,7 @@
 Goal: every kill that already gets a line in chat also names **the weapon**, enchanted, renamed or plain, with a hover tooltip. We don't replace or reword anyone's message; we add one line under it:
 
 ```
-Blight Zombie was slain by Alice                ← the pack's / vanilla's own line, untouched
+Blight Xaphan Lvl 4 was killed by Crossfire!    ← Scaling Health's own line (real, from the server), untouched
   ↳ with [Longbow] · 97m · final 22.0 · 1m12s   ← ours
 ```
 ```
@@ -33,6 +33,8 @@ Vanilla 1.12.2 `EntityDamageSource#getDeathMessage` only appends "using [item]" 
 | Anything else | nothing |
 
 "Announced mob" = `trick/AnnouncedMobs` (`06 §2.2`): boss flag, custom name, `trickshots.mobs`, `trickshots.nbtMarkers`. That list should match the mobs the pack itself announces (Blights via Scaling Health). Fill `nbtMarkers` from `/dpatch debug kill` on a Blight, and check which other kills get a pack line (⚠ verify: Champions, InfernalMobs, dragons, bosses).
+
+Pack line for Blights (seen on the server, 2026-11-08): `Blight <mob name> was killed by <player>!`, e.g. `Blight Xaphan Lvl 4 was killed by Crossfire!`. ⚠ verify: the `Lvl 4` is Lycanites' level in the mob's name. If Lycanites sets it as a *custom name*, the `NAMED` rule in `AnnouncedMobs` would match every Lycanites mob and give them a follow-up with no pack line above it. `/dpatch debug kill` prints `customName=`; if it's set on ordinary Lycanites mobs, add a way to turn off the `NAMED` rule.
 
 ### 2.2 Credit and weapon
 - Killer = `source.getTrueSource()` if it is a player other than the victim. Otherwise no follow-up.
