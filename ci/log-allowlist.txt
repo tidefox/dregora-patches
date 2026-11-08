@@ -1,0 +1,4 @@
+# Extended regexes (one per line) for log lines that are expected on a clean
+# Forge 1.12.2 + FermiumBooter server and must not fail the smoke test.
+# FermiumBooter INFO line naming its own config option "Append General Mixin Exceptions To Crash Reports"
+\[FermiumJarScanner\]: FermiumMixinConfig enqueueing mixin\(s\) parsed from annotated config

@@ -56,6 +56,7 @@ Projectile tagging: on `ArrowLooseEvent` stash `pendingLauncher[player] = bow.co
 
 ### 2.3 Fight tracking (tracked targets only)
 - On `LivingDamageEvent` where victim tracked & attacker resolves to player: `fights[victimUUID].add(player, amount)`, set `start` on first hit.
+- **Cost rule:** this event fires for every hit on every entity, and mob ticking is already ~48% of server time (`reference/spark-live-54min-summary.txt`). Check the cheap condition first (attacker resolves to a player), and only then `isTracked`. `isTracked` may serialize NBT (`06 §2.2` rule 4), so cache its result per entity (`WeakHashMap<Entity, Boolean>`, or entity id + world, cleared on death/unload): at most one NBT read per mob.
 - Expire fight after `kill.fightTimeoutSec = 60` without damage; clear on death/unload.
 - On death: final-hit amount, duration, assists = players with damage in last `kill.assistWindowSec = 15` (excluding killer), sorted by damage.
 
@@ -97,7 +98,7 @@ kill/
 4. Tracked detection via `AnnouncedMobs` (already built in P2).
 5. FightTracker + assists + duration.
 6. Pet credit (Raiko, dragons).
-7. Config, scope, lang.
+7. Config, scope. All text as literal `TextComponentString` (clients have no Warband lang file; `CLAUDE.md` Conventions).
 
 ### Tests
 - Unnamed sword kill → weapon shown.

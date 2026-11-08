@@ -1,0 +1,15 @@
+[
+  {
+    "modid": "${mod_id}",
+    "name": "${mod_name}",
+    "description": "Server-side performance fixes for RLCraft Dregora pack mods (NuclearCraft, Level Up! 2). Requires FermiumBooter. Clients need nothing.",
+    "version": "${version}",
+    "mcversion": "1.12.2",
+    "url": "https://github.com/tidefox/dregora-server-mods",
+    "authorList": ["tidefox"],
+    "credits": "",
+    "logoFile": "",
+    "screenshots": [],
+    "dependencies": []
+  }
+]

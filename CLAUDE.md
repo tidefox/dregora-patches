@@ -53,6 +53,14 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 3. `ci/smoke.sh` + `.github/workflows/build.yml` as in skinbridge: build, unit tests, boot a real Forge 2860 dedicated server with FermiumBooter + the jar, fail on mixin errors.
 4. `./gradlew build` green in both folders; smoke test boots. Commit.
 
+**P0 status: done.** Notes from doing it:
+- Gradle runs on **Java 25** (RFG 2.0.3 plugin classes are Java 25 bytecode); compile/test use the Java 8 toolchain (foojay provisions it). Locally: `JAVA_HOME=<jdk25> ./gradlew build`.
+- `./gradlew runServer` runs in `<folder>/run/` (accept the EULA once: `echo eula=true > run/eula.txt`). In `dregorapatches/` it copies FermiumBooter into `run/mods` and loads the coremod via `-Dfml.coreMods.load`.
+- NuclearCraft compiles against 2.19d (`curse.maven:nuclearcraft-226254:9469401`, deobfuscated by RFG). Level Up! 2's CurseForge id wasn't reachable from the sandbox: drop `Level Up- 2-1.1.23-1.12.jar` into `dregorapatches/libs/` (git-ignored) or set `levelup2_project_id`/`levelup2_file_id` in `gradle.properties` before writing the `08` mixin.
+- FermiumBooter's classes are never visible in our coremod constructor; the early config is registered from `injectData` (see `docs/reference/mods-context.md` → FermiumBooter). `ci/smoke.sh` boots with both jar orders to keep that covered.
+- The vanilla refmap is only generated once the early config lists a mixin; CI checks for it from then on.
+- MixinExtras 0.5.0 ships inside FermiumBooter 1.4.1 (runtime). Add it compile-only when writing the first `@WrapOperation`.
+
 ## Phase order
 | Phase | Work | Acceptance |
 |---|---|---|

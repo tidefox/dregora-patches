@@ -1,0 +1,11 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "io.github.tidefox.dregorapatches.mixin.levelup2",
+  "plugin": "io.github.tidefox.dregorapatches.mixinsupport.PatchesMixinPlugin",
+  "compatibilityLevel": "JAVA_8",
+  "injectors": {
+    "defaultRequire": 0
+  },
+  "mixins": []
+}
