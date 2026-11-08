@@ -139,14 +139,13 @@ Unchanged wherever a player can be:
 
 Each step is measured on its own. Steps 2 and 3 ship in one jar behind config switches; moving between them is a config edit + restart.
 
-### Step 1 — NuclearCraft 2.19d (ops, no code)
-Owner, on the server:
-- `CF_EXCLUDE_MODS=226254`
-- 2.19d jar → `~/srv/minecraft-extra/mods/` (COPY_MODS_SRC)
-- verify exactly one nuclearcraft jar in `/data/mods`
+### Step 1 — baseline on NuclearCraft 2.19a (ops, no code)
+**Decided 2026-11-08: the server stays on 2.19a.** NuclearCraft's `@Mod` sets no `acceptableRemoteVersions`, so FML requires clients to run the exact same version: a server update to 2.19d would force every player to update their client. 2.19d would not have fixed the spikes anyway (it only speeds up `BlockFinder`, < 0.3%, plus a cheaper scrubber removal), and the classes we patch are identical in both versions.
+
+Owner, on the server (Chunk Pregenerator idle):
 - `spark tickmonitor --threshold-tick 150` (15 min) → **baseline**; plus a 30 min unfiltered `spark profiler` for `tools/spark_summary.py`.
 
-Expected: cheaper scrubber removal (radiation-handler fix). Spikes still there.
+Expected: the 45 s spikes, as in the existing profiles.
 
 ### Step 2 — Reactor freeze + claims (on by default)
 **Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class drops out of the set. A frozen-type TE ticks only if it lies inside a **claim box**: ±(`fission_max_size` + 2) around a claimed controller, same dimension. That box contains every block of any reactor the controller can belong to; ruin parts that happen to fall inside it tick too, as they would in vanilla.
@@ -263,7 +262,7 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 
 ### 4.2 Steps
 0. P0 done (`CLAUDE.md` Setup). Resolve §4.4 ⚠ items that need jars before writing the matching mixin.
-1. Owner: NuclearCraft 2.19d + baseline (§3 step 1).
+1. Owner: baseline on NuclearCraft 2.19a (§3 step 1).
 2. Build in this order, each with its unit/dev test (§4.3): mixin plumbing + `/dpatch` stats → `08` Level Up! 2 fix → freeze + claims + `/reactor` → chunk guard → `/dpatch chunkloads`.
 3. Hand the jar to the owner. Live, freeze on / guard off → 15 min tickmonitor + `/dpatch nc stats` + 30 min profile.
 4. Live, guard on → 15 min tickmonitor; `/dpatch chunkloads 300` shows no NC frames.
@@ -283,7 +282,7 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 - Radiation: Geiger counter readings near a ruin with freeze on/off match.
 - Guard on: teleport away from a ruin, wait one autosave → its chunks unload (`/forge tps` loaded-chunk count drops). Return → readings match guard-off.
 - Reactor straddling a chunk border near a player → forms and outputs as with the guard off. Reactor straddling into an unloaded chunk (dev: force-unload) → pauses (`CASING_INCOMPLETE`), heat constant, resumes on load.
-- NuclearCraft 2.19a **and** 2.19d → all mixins apply (stats show "patched: yes").
+- NuclearCraft 2.19a (what runs) → all mixins apply (stats show "patched: yes"); 2.19d optional, since the patched classes are identical.
 - `/reactor claim` by a player who didn't place the controller → refused; op → allowed.
 - Remove the jar → world loads normally; `data/dregorapatches_reactors.dat` is ignored; keep-loaded tickets are dropped by Forge.
 - Vanilla 1.12.2 Forge client without the jar (and the Dregora client pack) connect; chat prompt is clickable; no errors client-side.

@@ -59,7 +59,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | Phase | Deliverable | Done when |
 |---|---|---|
 | P0 ✔ | Both folders scaffolded after `tidefox/skinbridge` (RFG 2.0.3); `./gradlew build` green; `runServer` boots; CI smoke boots Forge 2860 + FermiumBooter + both jars | jars build, server starts with jars in dev |
-| P1 | Patches: owner moves NC to 2.19d (baseline) → one jar: NC reactor freeze (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
+| P1 | Patches: owner records a baseline on NC 2.19a (no NC update) → one jar: NC reactor freeze (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
 | P2 | Warband: core + 05 + 06 | recap delivered on respawn; trick shot fires only on announced mobs |
 | P3 | Warband: 03, then 04 | per doc tests |
 
