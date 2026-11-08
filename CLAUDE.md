@@ -56,7 +56,7 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 **P0 status: done.** Notes from doing it:
 - Gradle runs on **Java 25** (RFG 2.0.3 plugin classes are Java 25 bytecode); compile/test use the Java 8 toolchain (foojay provisions it). Locally: `JAVA_HOME=<jdk25> ./gradlew build`.
 - `./gradlew runServer` runs in `<folder>/run/` (accept the EULA once: `echo eula=true > run/eula.txt`). In `dregorapatches/` it copies FermiumBooter into `run/mods` and loads the coremod via `-Dfml.coreMods.load`.
-- NuclearCraft compiles against 2.19d (`curse.maven:nuclearcraft-226254:9469401`, deobfuscated by RFG). Level Up! 2 (CurseForge name "Level Up! Reloaded") compiles from `dregorapatches/libs/Level Up! 2-1.1.23-1.12.jar` (git-ignored, never committed; the owner provides it). CI doesn't have it: before the `08` mixin lands, set `levelup2_project_id`/`levelup2_file_id` in `gradle.properties` (CurseMaven) so CI can compile.
+- NuclearCraft compiles against 2.19d (`curse.maven:nuclearcraft-226254:9469401`, deobfuscated by RFG). Level Up! 2 (CurseForge "Level Up! Reloaded") compiles from CurseMaven `curse.maven:levelup2-251136:2763516` (same sha1 as the server jar). `dregorapatches/libs/` (git-ignored) is only a fallback; never commit mod jars.
 - FermiumBooter's classes are never visible in our coremod constructor; the early config is registered from `injectData` (see `docs/reference/mods-context.md` → FermiumBooter). `ci/smoke.sh` boots with both jar orders to keep that covered.
 - The vanilla refmap is only generated once the early config lists a mixin; CI checks for it from then on.
 - MixinExtras 0.5.0 ships inside FermiumBooter 1.4.1 (runtime). Add it compile-only when writing the first `@WrapOperation`.
