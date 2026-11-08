@@ -86,3 +86,6 @@ None. The same machines get the same bonus on the same ticks. The only theoretic
 - Brewing stand owned + brewing skill → same behavior on/off.
 - Unowned furnace → no bonus, on and off.
 - Live: 30 min unfiltered `spark profiler` → `tools/spark_summary.py`; `doFurnaceTicks` should drop from ~4.5% of total to < 0.1%.
+
+## 4. Live result (2026-11-08, 5–6 players)
+`/dpatch levelup2 stats` at 20:00 / 20:30: fix on, 3 candidate classes (0 learned), 27.3 / 20.7 candidates per world tick, **0.137 / 0.090 ms per world tick** (was ≈ 2.3 ms per tick, §1.1), 0 CMEs. Spark share pending the profile summary.

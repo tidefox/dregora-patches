@@ -311,3 +311,27 @@ Boot test on a real Forge 2860 dedicated server + FermiumBooter 1.4.1 + NC 2.19a
 - `freezeReactorParts = false`, port at the edge of the loaded spawn area: guard off → `/dpatch chunkloads` attributes a disk load to `nc.util.BlockFinder.getBlockState` (port `findController`); guard on → 0 loads, ~1,400 blocked (`TileFissionPort`, `TileBuffer`).
 - Not testable headless (needs a player): claim prompt / claim / unclaim, keep-loaded, owned furnace bonus. Those stay in §4.4 for the dev client and the owner.
 - Note for testing: with no player online, `WorldServer` stops ticking entities and tile entities 300 ticks after the last player leaves (vanilla), so empty-server measurements only cover the first 15 s.
+
+### 4.7 Live result — step 2: freeze on, guard off (2026-11-08, 20:00–20:30)
+Server: 0.1.0 jar, boot 14:43, `freezeReactorParts=true, chunkGuard=false, furnaceScanFix=true`, 5 mixins applied, 0 claims. 5–6 players actively playing (not idle). Raw files on kyuubi: `~/dp-step2-2026-11-08-2000/`.
+
+**Tick monitor (15 min, threshold 150 ms):** 31 slow ticks, **max 397 ms** (baseline before the jar: 1.1–2.6 s every 45 s as a 3-tick burst ~270 → ~350 → 1100–2600 ms, `reference/handoff-nc-fission-lag.md`). The 1–2.6 s tick is gone. Two periodic series remain:
+- every **900 ticks** exactly (20 of 20 cycles), 249–397 ms, mean 304 ms: one tick per cycle = vanilla autosave (`MinecraftServer.tick`, `tickCounter % 900`). Matches the first two ticks of the old burst; the NC third tick is gone. ⚠ confirm from the profile that these ticks are save, not NC.
+- every **600 ticks** (all ≡ 508 mod 600), 158–216 ms, only some cycles over threshold: a 30 s job of another mod, not NC. Unknown; look it up in the profile.
+- Young-gen GC 13–42 ms, no old-gen.
+
+**`/dpatch nc stats`:** dim 0: 124 active coolers, 1 controller, 41 ports frozen, 0 ticking. Frozen ticks skipped +5,980,648 in 30 min = 166 per tick = exactly the frozen count.
+
+**`/forge tps`:** overworld mean 20.0 → 21.9 ms, TPS 20.
+
+**`/dpatch chunkloads 300`:** 106 non-player loads (603 player/async skipped):
+| count | first frame | chunk |
+|---|---|---|
+| 57 | vanilla `EntityLivingBase.canEntityBeSeen` (mob ray trace) | [180, 64]… |
+| 30 | vanilla `BlockFrostedIce` neighbour check (Frost Walker) | [38, 186]… |
+| 12 | `nc.tile.energyFluid.TileBuffer.pushStacksToSide` | [-462, -544], [-461, -542] |
+| 5 | `nc.radiation.RadiationHelper.getTileInventory` | [64, 203]… |
+| 2 | redstone wire, Quark chest | |
+NC is 17 of 106: an unfrozen buffer and radiation reading neighbour inventories → what the chunk guard (step 3) blocks.
+
+**Profile (30 min, unfiltered):** saved by spark, summary pending.
