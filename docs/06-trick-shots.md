@@ -35,6 +35,8 @@ Mob qualifies if **any**:
 
 Items 3–4 are filled from `/wb debug kill` output (§2.6) — no guessing other mods' internals.
 
+Evaluate rules 1–3 first (cheap) and rule 4 only if they fail; rule 4 calls `writeToNBT`, a full entity serialization. Here it runs once per qualifying kill, which is fine; `03` calls the same check per hit and must cache it (`03 §2.3`).
+
 Candidates in this pack to run the debug against: Scaling Health Blights, Champions, InfernalMobs, Lycanites bosses, playerbosses, Ice and Fire dragons.
 
 ### 2.3 Qualifying shot
