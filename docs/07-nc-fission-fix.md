@@ -311,3 +311,35 @@ Boot test on a real Forge 2860 dedicated server + FermiumBooter 1.4.1 + NC 2.19a
 - `freezeReactorParts = false`, port at the edge of the loaded spawn area: guard off → `/dpatch chunkloads` attributes a disk load to `nc.util.BlockFinder.getBlockState` (port `findController`); guard on → 0 loads, ~1,400 blocked (`TileFissionPort`, `TileBuffer`).
 - Not testable headless (needs a player): claim prompt / claim / unclaim, keep-loaded, owned furnace bonus. Those stay in §4.4 for the dev client and the owner.
 - Note for testing: with no player online, `WorldServer` stops ticking entities and tile entities 300 ticks after the last player leaves (vanilla), so empty-server measurements only cover the first 15 s.
+
+### 4.7 Live result — step 2: freeze on, guard off (2026-11-08, 20:00–20:30)
+Server: 0.1.0 jar, boot 14:43, `freezeReactorParts=true, chunkGuard=false, furnaceScanFix=true`, 5 mixins applied, 0 claims. 5–6 players actively playing (not idle). Raw files on kyuubi: `~/dp-step2-2026-11-08-2000/`.
+
+**Tick monitor (15 min, threshold 150 ms):** 31 slow ticks, **max 397 ms** (baseline before the jar: 1.1–2.6 s every 45 s as a 3-tick burst ~270 → ~350 → 1100–2600 ms, `reference/handoff-nc-fission-lag.md`). The 1–2.6 s tick is gone. Two periodic series remain:
+- every **900 ticks** exactly (20 of 20 cycles), 249–397 ms, mean 304 ms: one tick per cycle = vanilla autosave (`MinecraftServer.tick`, `tickCounter % 900`). Matches the first two ticks of the old burst; the NC third tick is gone. ⚠ confirm from the profile that these ticks are save, not NC.
+- every **600 ticks** (all ≡ 508 mod 600), 158–216 ms, only some cycles over threshold: a 30 s job of another mod, not NC. Unknown; look it up in the profile.
+- Young-gen GC 13–42 ms, no old-gen.
+
+**`/dpatch nc stats`:** dim 0: 124 active coolers, 1 controller, 41 ports frozen, 0 ticking. Frozen ticks skipped +5,980,648 in 30 min = 166 per tick = exactly the frozen count.
+
+**`/forge tps`:** overworld mean 20.0 → 21.9 ms, TPS 20.
+
+**`/dpatch chunkloads 300`:** 106 non-player loads (603 player/async skipped):
+| count | first frame | chunk |
+|---|---|---|
+| 57 | vanilla `EntityLivingBase.canEntityBeSeen` (mob ray trace) | [180, 64]… |
+| 30 | vanilla `BlockFrostedIce` neighbour check (Frost Walker) | [38, 186]… |
+| 12 | `nc.tile.energyFluid.TileBuffer.pushStacksToSide` | [-462, -544], [-461, -542] |
+| 5 | `nc.radiation.RadiationHelper.getTileInventory` | [64, 203]… |
+| 2 | redstone wire, Quark chest | |
+NC is 17 of 106: an unfrozen buffer and radiation reading neighbour inventories → what the chunk guard (step 3) blocks.
+
+**Profile (30 min, unfiltered, `config/spark/data/profile-2026-11-08_20.30.48.sparkprofile`, 35,776 ticks; summary cut at 0.2 %):**
+- `TileFissionPort` / `findController` / `pushEnergy`: **not in the tree** (< 0.2 %; was 110 s + 108 s per 54 min). All tile-entity ticking through our wrapper (`World.wrapOperation$…$dp$tick`, every TE) = 1.18 % (21 s); entities (`World.updateEntity`) = 33.6 %.
+- Autosave `MinecraftServer.saveAllWorlds` = 0.49 % (8.8 s ≈ 40 saves × 220 ms) → ✔ the 900-tick slow ticks are the vanilla autosave, not NC.
+- NC left: `RadiationHandler.updateWorldRadiation` 0.38 %, `RadiationEnvironmentHandler` 0.27 % (package `nc.radiation` self 0.61 %).
+- `loadChunk` callers: NC only `RadiationHelper.getTileInventory` (156 ms, all disk) and `TileBuffer.pushStacksToSide` (84 ms, no disk) in 30 min; all main-thread disk reads together ≈ 0.66 s. Before: ≈ 90 % of disk loads were NC.
+- The 600-tick job can't be told apart in an unfiltered profile; needs `--only-ticks-over 150`. Not NC (no NC frame large enough).
+- Top cost now is mobs: `com.Fishmod` (mod_LavaCow) 5.5 % self, `com.charles445` (RLTweaker/AI Reducer/SimpleDifficulty) 4.8 %, Lycanites 4.0 %. Out of scope.
+
+**Acceptance (§4.3), step 2:** no 45 s spikes ✔ (max 397 ms = autosave); `TileFissionPort` < 0.5 % ✔; NC callers in the `loadChunk` table: 240 ms / 30 min left (radiation, one buffer) → step 3; `doFurnaceTicks` < 0.1 % ✗ — 0.44 %, see `08 §4`.
