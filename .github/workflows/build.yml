@@ -124,17 +124,25 @@ jobs:
       - name: Fetch FermiumBooter ${{ env.FERMIUM_VERSION }}
         run: ci/fetch-fermium.sh "${{ matrix.fermium_file_id }}" "$FERMIUM_VERSION" smoke/fermiumbooter.jar
 
+      # The server's exact jars (sha1-checked), so the late NC / Level Up! 2 mixins are applied too.
+      - name: Fetch NuclearCraft 2.19a and Level Up! 2 1.1.23
+        run: |
+          ci/fetch-mod.sh nuclearcraft 226254 6151363 05db28e36a141316f8fa511f226c794110e58d12 smoke/nuclearcraft-1.12.2-2.19a.jar
+          ci/fetch-mod.sh levelup2 251136 2763516 e41da79233cb9e37824cb05e9a5db7588bec599d smoke/levelup2-1.1.23-1.12.jar
+
       - uses: actions/download-artifact@v4
         with:
           name: jars
           path: smoke/dist
 
-      - name: Boot server (both jar orders), /dpatch mixins, /wb reload, stop
+      - name: Boot server (both jar orders + without patched mods), /dpatch, /reactor, /wb reload, stop
         run: >
           ci/smoke.sh smoke/server
           "$(ls smoke/dist/dregorapatches-*.jar | head -1)"
           "$(ls smoke/dist/warband-*.jar | head -1)"
           smoke/fermiumbooter.jar
+          smoke/nuclearcraft-1.12.2-2.19a.jar
+          smoke/levelup2-1.1.23-1.12.jar
 
       - uses: actions/upload-artifact@v4
         if: always()

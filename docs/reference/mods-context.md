@@ -63,7 +63,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 - `ChunkProviderServer.getLoadedChunk`: skip `unloadQueued = false` while in NC scope.
 - Behaviour relied on: `getBlockState`/`getTileEntity` load chunks synchronously; touching a queued chunk cancels its unload; autosave every 900 ticks queues all non-player chunks, ≤ 100 unloaded per tick before TEs tick; `getTileEntity` scans `addedTileEntityList` while TEs tick.
 - `ForgeChunkManager` tickets for the op-only keep-loaded command (limits in `config/forgeChunkLoading.cfg`).
-- ⚠ decompile Forge 2860 `ChunkProviderServer` before writing the guard.
+- ✔ Forge 2860 `ChunkProviderServer` decompiled (see `07 §3` step 3). `EmptyChunk` is client-only → the guard uses our own `GuardChunk`.
 
 ## FermiumBooter — runtime mixin loader (dependency)
 - **Jar:** `` `FermiumBooter-1.4.1.jar`` (backtick prefix, both sides, to sort first; irrelevant to us, see load order below); CurseForge project **968474**, file **7279112** (used by `tidefox/skinbridge` via CurseMaven `curse.maven:fermiumbooter-968474:7279112`).
@@ -76,7 +76,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 
 ## MixinExtras — `@WrapOperation` (dependency)
 - **Verified (P0):** FermiumBooter 1.4.1 bundles MixinExtras **0.5.0** (`com/llamalad7/mixinextras/**`, incl. `injector/wrapoperation/WrapOperation`, in both CurseForge uploads 7212281 and 7279112) and initialises it in its coremod constructor (`MixinExtrasBootstrap.init`; boot log: `Initializing MixinExtras via …MixinExtrasServiceImpl(version=0.5.0)` with only FermiumBooter + our jars installed). `@WrapOperation` can be relied on at runtime.
-- Compile time: add MixinExtras as a compile-only dependency (and to the annotation processor path) when the first `@WrapOperation` is written; it is not on the classpath in P0.
+- Compile time: `io.github.llamalad7:mixinextras-common:0.5.0` compile-only + annotation processor (`gradle.properties` → `mixinextras_version`). Used by `MixinWorld` (tick wrapper) and `MixinChunkProviderServer` (`unloadQueued` write).
 
 ## FermiumMixins, RLMixins, EagleMixins, SRPMixins, fermiumasm — conflict check only
 - `FermiumMixins-1.0.10`, `RLMixins-1.4.6`, `EagleMixins-1.2.4`, `SRPMixins-2.9.2.2`, `fermiumasm-5.28` (probably the source of the `mirror.normalasm.*` frames in the profile, a NormalASM fork ⚠).
