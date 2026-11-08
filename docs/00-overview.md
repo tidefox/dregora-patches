@@ -17,7 +17,7 @@ Kept separate on purpose: Warband must stay a plain, removable mod; Patches is a
 
 | Doc | Module | Mod | Phase | Changes gameplay? |
 |---|---|---|---|---|
-| `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | Patches | **P1** | freeze: no visible change (no player reactors). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
+| `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | Patches | **P1** | freeze: reactors run only after a player claims them (`/reactor`). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
 | `08-levelup2-furnace-scan.md` | Level Up! 2 per-tick tile-entity scan | Patches | **P1** | no |
 | `05-death-recap.md` | Private death recap | Warband | **P2** | no |
 | `06-trick-shots.md` | Trick shots (announced mobs only) | Warband | **P2** | no |
@@ -49,6 +49,8 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | `/trickshots [player]` | Warband | all |
 | `/ff status` | Warband | all |
 | `/wb debug damage [n]`, `/wb debug kill [n]`, `/wb reload` | Warband | op |
+| `/reactor list`, `/reactor claim [token]`, `/reactor unclaim <id>` | Patches | all |
+| `/reactor list -exact`, `/reactor admin list [player] [-exact]`, `/reactor admin unclaim <id>`, `/reactor admin keeploaded <id> on\|off` | Patches | op |
 | `/dpatch chunkloads <seconds>`, `/dpatch nc stats`, `/dpatch levelup2 stats` | Patches | op |
 
 ## Phases

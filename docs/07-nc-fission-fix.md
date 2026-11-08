@@ -4,7 +4,9 @@ Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reac
 
 Lives in **Dregora Patches** (`dregorapatches`), not Warband: it's a mixin into another mod (plus two small vanilla hooks).
 
-Approach: **freeze** worldgen reactor parts (no player reactors exist) and **guard** NC so it never loads a chunk.
+Approach: **freeze** reactor parts unless a player has **claimed** the reactor (no player reactors exist yet), and **guard** NC so it never loads a chunk.
+
+**This does not modify NuclearCraft.** It's a separate server-side jar: the NuclearCraft jar on disk is untouched, the mixins change NC and vanilla classes in memory at startup only, and our state lives in our own world-data files. Remove the jar → NuclearCraft behaves exactly as stock again (spikes included); clients need nothing.
 
 Sources: `reference/handoff-nc-fission-lag.md` (investigation), `reference/spark-slowticks-summary.txt` (6 ticks > 1 s, 2026-11-07), `reference/spark-live-54min-summary.txt` (unfiltered 54 min live profile, 2026-11-05). Both summaries were produced with `tools/spark_summary.py`.
 
@@ -101,15 +103,15 @@ The same thing happens with player-built NC setups that span several chunks: tod
 
 ## 2. Gameplay impact
 
-Owner facts (2026-11-08): no player has ever built a fission reactor; Dregora has no chunk loaders and doesn't need them; NC is only used as far as progression requires.
+Owner facts (2026-11-08): no player has ever built a fission reactor; Dregora has no chunk loaders and doesn't need them; NC is only used as far as progression requires. Keep RLCraft's low-assist intent: no general coordinate display, no player chunk loading.
 
-### 2.1 Reactor freeze (step 2)
-Worldgen reactor parts (fission controllers, fission ports, active coolers) don't tick unless a player has placed or right-clicked an NC block near them.
-- **Nothing visible changes for ruins.** Ruin ports don't form reactors, ruin coolers only move water between ruin coolers, and ruin controllers are idle (≈ 1 s of `TileItemGenerator` time in 54 min).
+### 2.1 Reactor freeze + claims (step 2)
+Worldgen and unclaimed reactor parts (fission controllers, fission ports, active coolers) don't tick. A player brings a reactor to life by **claiming** it (§3 step 2). Nothing else unfreezes anything: walking through a bunker, looting, mining, opening GUIs and right-clicking all leave it frozen, so one player looting a hundred bunkers costs nothing.
+- **Vanilla Dregora, for comparison:** every reactor part ticks whenever its chunk is loaded; ports search for their controller on every chunk load; ruins keep themselves loaded through NC's own lookups. A ruin with an intact shell can be refuelled and run without any extra step, but the pack has no chunk loaders, so a reactor only runs while someone is nearby (or while it accidentally keeps itself loaded).
+- **What players notice:** to run a reactor, the controller must be placed by the player (craft one, or break and replace the ruin's controller) and claimed from the chat prompt. Before that, the reactor looks dead: its controller GUI shows its saved state and doesn't change.
 - **A ruin can't overheat or melt down while frozen.** Heat only changes inside the controller's `update()`.
 - **Radiation is unchanged.** The world tick reads ruin inventories and tanks directly (§2.3), whether or not the blocks tick.
-- **Loot and inventories still work.** A frozen controller's GUI shows stale numbers until a right-click unfreezes it; then it ticks as normal.
-- **Player builds work as in vanilla NC.** Placing any `nuclearcraft:*` block, or right-clicking one, unfreezes every reactor part within `fission_max_size + 3` blocks, permanently (saved with the world). A player building a reactor next to a ruin brings that ruin back to life, which is the same as vanilla.
+- **Loot and inventories still work.** Container contents sync through the player's open screen, not the block's tick.
 - Buffers, scrubbers, generators, processors, batteries are **not** frozen: players use them. The chunk guard (step 3) handles their chunk loading.
 
 ### 2.2 Chunk guard (step 3): NC never loads a chunk or keeps one loaded
@@ -142,28 +144,39 @@ Owner, on the server:
 
 Expected: cheaper scrubber removal (radiation-handler fix). Spikes still there.
 
-### Step 2 — Reactor freeze (on by default)
-**Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class just drops out of the set.
+### Step 2 — Reactor freeze + claims (on by default)
+**Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class drops out of the set. A frozen-type TE ticks only if it lies inside a **claim box**: ±(`fission_max_size` + 2) around a claimed controller, same dimension.
 
-**Unfrozen zones:** per dimension, a list of `BlockPos` (`WorldSavedData` `dregorapatches_nc`). A frozen-type TE ticks normally if it lies within `fission_max_size + 3` (Chebyshev) of any zone point.
-- Add a zone point on `BlockEvent.EntityPlaceEvent` (also receives multi-place) of any `nuclearcraft:*` block, and on `PlayerInteractEvent.RightClickBlock` on any `nuclearcraft:*` block (server side, real players only).
-- Zone points are never removed automatically (`/dpatch nc unfreeze-clear <radius>` for the owner).
+**Claiming:**
+1. `BlockEvent.EntityPlaceEvent`: a real `EntityPlayerMP` places a `nuclearcraft:fission_controller_*` block → issue a pending token (random, in memory, expires after 5 min) and send that player only:
+   `[Reactor] Fission controller placed near ≈ -1700, 0. [Claim this reactor]` — the bracket is a `ClickEvent.RUN_COMMAND` for `/reactor claim <token>` (`TextComponentString`, no lang keys).
+2. `/reactor claim` without a token: ray-trace ≤ 5 blocks; must hit a fission controller that the player placed this server run (token exists for that pos) or that is unclaimed and was placed by a player (tracked in the claim data as "placed, unclaimed"). Worldgen controllers can't be claimed in place; they must be broken and replaced.
+3. Validation: controller still there, not claimed by anyone, owner's claim count < `reactor.maxClaimsPerPlayer` (0 = unlimited, default 0).
+4. On claim: store `{id, dim, pos, ownerUUID, ownerName, created, keepLoaded=false, lastStatus}`; bump `ReactorClaims.epoch` so TEs in the box re-evaluate.
 
-**Hook: the tick call itself**, not an NC method. NC `update()` methods chain through `super.update()` and do work after it (`TileFissionPort.update` = `super.update(); pushEnergy();`), so a HEAD inject on `NCTile.update` would miss part of the tick. Instead, wrap the `ITickable.update()` call inside `World.updateEntities` (early vanilla mixin, refmap) with MixinExtras `@WrapOperation`, which composes with other mods' wrappers instead of conflicting like `@Redirect` would:
+**Ending a claim:** `BlockEvent.BreakEvent` on a claimed controller, `/reactor unclaim <id>` (owner), `/reactor admin unclaim <id>` (op). Also checked lazily: when a claimed controller's chunk is loaded and there's no controller at `pos` (explosion, other mod) → remove. Owner gets a chat message if online. Keep-loaded tickets are released with the claim.
+
+**Status snapshot:** every 100 ticks, for each claimed controller whose chunk is loaded, read public fields `complete`, `isProcessing`, `problem`, `heat` / `getMaxHeat()`, `currentEnergyStored` into `lastStatus` (+ time). Never loads a chunk.
+
+**Coordinates:** shown as an **estimate** by default for everyone: X/Z rounded to the nearest `reactor.coordEstimate` blocks (default 100), no Y, plus dimension name. Exact X/Y/Z only for ops with the `-exact` flag.
+
+**Keep loaded (ops only):** `/reactor admin keeploaded <id> on|off` → a `ForgeChunkManager` ticket forcing only the chunks overlapping that reactor's claim box (≤ 3×3). Tickets are re-applied on world load through the mod's `LoadingCallback`. Disabled entirely with `reactor.allowKeepLoaded = false`.
+
+**Tick hook: the tick call itself**, not an NC method. NC `update()` methods chain through `super.update()` and do work after it (`TileFissionPort.update` = `super.update(); pushEnergy();`), so a HEAD inject on `NCTile.update` would miss part of the tick. Instead, wrap the `ITickable.update()` call inside `World.updateEntities` (early vanilla mixin, refmap) with MixinExtras `@WrapOperation`, which composes with other mods' wrappers instead of conflicting like `@Redirect` would:
 ```java
 @WrapOperation(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ITickable;update()V"))
 private void dp$tick(ITickable t, Operation<Void> original) {
     if (!(t instanceof DpNcTile) || ((TileEntity) t).getWorld().isRemote) { original.call(t); return; }
     DpNcTile d = (DpNcTile) t;                      // duck interface added to NCTile by MixinNCTile
-    if (d.dp$isFrozen()) { NcStats.frozenTicks++; return; }   // cached; re-evaluated when Zones.epoch changes
+    if (d.dp$isFrozen()) { NcStats.frozenTicks++; return; }   // cached; re-evaluated when ReactorClaims.epoch changes
     NcScope.enter(t);
     try { original.call(t); } finally { NcScope.exit(); }
 }
 ```
-`dp$isFrozen()`: false unless `cfg.nc.freezeReactorParts` and the TE is a frozen type; `Zones.covers(world, pos)` is re-checked only when `Zones.epoch` (bumped on every new zone point) differs from the TE's cached epoch. A frozen TE never runs `onAdded` (no `findController`) and never calls `pushEnergy` / `spreadFluid`.
+`dp$isFrozen()`: false unless `cfg.nc.freezeReactorParts` and the TE is a frozen type outside every claim box; re-checked only when `ReactorClaims.epoch` (bumped on every claim/unclaim) differs from the TE's cached epoch. A frozen TE never runs `onAdded` (no `findController`) and never calls `pushEnergy` / `spreadFluid`. When a claim unfreezes many ports at once, spread their first tick over 20 ticks (`pos.hashCode() % 20`) to avoid a one-time hitch.
 ⚠ verify: MixinExtras is available at runtime with FermiumBooter 1.4.1 (the live profile shows `wrapOperation$…fermiummixins…` frames, so some copy is loaded); check whether any pack mixin already redirects this call (`javap`/grep mixin configs for `updateEntities`).
 
-Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0, including ruins near players. The port↔controller loop that keeps ruins loaded is gone. Buffers / scrubbers / generators may still load chunks → step 3.
+Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0 except for claimed reactors. The port↔controller loop that keeps ruins loaded is gone. Buffers / scrubbers / generators may still load chunks → step 3.
 
 ### Step 3 — Chunk guard (off by default, turned on after step 2 is measured)
 **Scope flag:** `NcScope` (static, server thread):
@@ -183,11 +196,19 @@ Expected: ruins away from players unload at autosave and stay unloaded → no NC
 Cache `findController` results per `(dim, pos)` (hit → master pos, miss), invalidated by NC place/break/explosion within `fission_max_size + 3`; needs search deferral when the guard is on so the cache never stores a false miss. Superseded by the freeze because no player reactors exist.
 
 ### Config (`config/dregorapatches.cfg`)
-`nc.freezeReactorParts = true`, `nc.chunkGuard = false`, `nc.logStats = false`, `levelup2.furnaceScanFix = true` (`08`).
+`nc.freezeReactorParts = true`, `nc.chunkGuard = false`, `nc.logStats = false`, `reactor.maxClaimsPerPlayer = 0` (unlimited), `reactor.coordEstimate = 100`, `reactor.allowKeepLoaded = true` (ops only), `levelup2.furnaceScanFix = true` (`08`).
 
 ### Commands
-- `/dpatch nc stats`: frozen TEs by type and dimension, zone points, frozen ticks skipped, guard blocks by TE class, "patched: yes/no" per mixin config.
-- `/dpatch nc unfreeze-clear <radius>`: remove zone points within radius of the sender (op).
+| Command | Who | What |
+|---|---|---|
+| `/reactor list` | all | own claims: id, dimension, **estimated** location, status (running / idle / incomplete + reason), heat %, energy, loaded or "not loaded, last seen …" |
+| `/reactor claim [token]` | all | claim from the chat prompt, or the controller you're looking at (§3 step 2) |
+| `/reactor unclaim <id>` | owner | end a claim |
+| `/reactor admin list [player] [-exact]` | op | all claims (or one player's); `-exact` shows full X/Y/Z |
+| `/reactor list -exact` | op | own claims with full X/Y/Z |
+| `/reactor admin unclaim <id>` | op | end any claim |
+| `/reactor admin keeploaded <id> on\|off` | op | force-load that reactor's chunks (≤ 3×3) |
+| `/dpatch nc stats` | op | frozen TEs by type and dimension, claims, frozen ticks skipped, guard blocks by TE class, "patched: yes/no" per mixin config |
 - `/dpatch chunkloads <seconds>`: logs every `ChunkEvent.Load` not caused by the player chunk map (skip stacks with `PlayerChunkMapEntry` or `ChunkIOProvider`), aggregated by first frame outside `net.minecraft`/`net.minecraftforge`, with chunk coords.
 
 ### Not doing
@@ -208,9 +229,11 @@ DregoraPatches.java                @Mod(acceptableRemoteVersions = "*", dependen
 PatchesConfig.java
 mixinsupport/PatchesMixinPlugin.java, MixinState.java   log + record applied mixins
 nc/FrozenTypes.java                class-name → Class set
-nc/Zones.java                      unfrozen zone points + epoch
-nc/ZonesData.java                  WorldSavedData
-nc/NcEvents.java                   place / right-click → zone point; world unload
+reactor/ReactorClaims.java         claims, claim boxes, epoch, status snapshots
+reactor/ReactorClaimsData.java     WorldSavedData (global MapStorage)
+reactor/ReactorEvents.java         controller place → token + chat prompt; controller break → unclaim
+reactor/ReactorChunkLoader.java    ForgeChunkManager LoadingCallback + tickets (ops)
+reactor/CmdReactor.java            /reactor …
 nc/NcScope.java                    scope flag + guard stats
 mixin/nc/MixinNCTile.java          implements DpNcTile (frozen-type flag, cached frozen state + epoch)
 mixin/vanilla/MixinWorld.java      @WrapOperation ITickable.update() in updateEntities (freeze + scope)
@@ -232,8 +255,11 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 
 ### 4.3 Tests
 - Dev world with a copied ruin: `/dpatch nc stats` shows ruin ports/coolers/controllers frozen; `/forge track te` shows them gone from the tick list cost.
-- Build a fission reactor next to a frozen ruin → placing the first NC block unfreezes the area; the reactor forms, runs, and the ruin ports in range behave as in vanilla NC. Restart → still unfrozen.
-- Right-click a frozen ruin controller → GUI updates after the click.
+- Loot a frozen ruin (open GUIs, take items, mine blocks) → nothing unfreezes (`/dpatch nc stats` unchanged).
+- Break and replace a ruin controller → chat prompt to that player only; click → claim; the reactor's ports/coolers tick; the reactor forms and runs as in vanilla NC. Restart → claim still there. Break the controller → claim removed, owner messaged.
+- Token from another player / expired token → refused. `reactor.maxClaimsPerPlayer = 1` → second claim refused.
+- `/reactor list` shows rounded X/Z only; `-exact` works for ops, is refused for players. Unloaded claim shows "not loaded" and does not load the chunk.
+- `/reactor admin keeploaded <id> on` → reactor keeps running with no player nearby; restart → still loaded; `off` / unclaim → ticket released.
 - Radiation: Geiger counter readings near a ruin with freeze on/off match.
 - Guard on: teleport away from a ruin, wait one autosave → its chunks unload (`/forge tps` loaded-chunk count drops). Return → readings match guard-off.
 - Reactor straddling a chunk border near a player → forms and outputs as with the guard off. Reactor straddling into an unloaded chunk (dev: force-unload) → pauses (`CASING_INCOMPLETE`), heat constant, resumes on load.
