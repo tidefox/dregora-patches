@@ -334,4 +334,12 @@ Server: 0.1.0 jar, boot 14:43, `freezeReactorParts=true, chunkGuard=false, furna
 | 2 | redstone wire, Quark chest | |
 NC is 17 of 106: an unfrozen buffer and radiation reading neighbour inventories → what the chunk guard (step 3) blocks.
 
-**Profile (30 min, unfiltered):** saved by spark, summary pending.
+**Profile (30 min, unfiltered, `config/spark/data/profile-2026-11-08_20.30.48.sparkprofile`, 35,776 ticks; summary cut at 0.2 %):**
+- `TileFissionPort` / `findController` / `pushEnergy`: **not in the tree** (< 0.2 %; was 110 s + 108 s per 54 min). All tile-entity ticking through our wrapper (`World.wrapOperation$…$dp$tick`, every TE) = 1.18 % (21 s); entities (`World.updateEntity`) = 33.6 %.
+- Autosave `MinecraftServer.saveAllWorlds` = 0.49 % (8.8 s ≈ 40 saves × 220 ms) → ✔ the 900-tick slow ticks are the vanilla autosave, not NC.
+- NC left: `RadiationHandler.updateWorldRadiation` 0.38 %, `RadiationEnvironmentHandler` 0.27 % (package `nc.radiation` self 0.61 %).
+- `loadChunk` callers: NC only `RadiationHelper.getTileInventory` (156 ms, all disk) and `TileBuffer.pushStacksToSide` (84 ms, no disk) in 30 min; all main-thread disk reads together ≈ 0.66 s. Before: ≈ 90 % of disk loads were NC.
+- The 600-tick job can't be told apart in an unfiltered profile; needs `--only-ticks-over 150`. Not NC (no NC frame large enough).
+- Top cost now is mobs: `com.Fishmod` (mod_LavaCow) 5.5 % self, `com.charles445` (RLTweaker/AI Reducer/SimpleDifficulty) 4.8 %, Lycanites 4.0 %. Out of scope.
+
+**Acceptance (§4.3), step 2:** no 45 s spikes ✔ (max 397 ms = autosave); `TileFissionPort` < 0.5 % ✔; NC callers in the `loadChunk` table: 240 ms / 30 min left (radiation, one buffer) → step 3; `doFurnaceTicks` < 0.1 % ✗ — 0.44 %, see `08 §4`.
