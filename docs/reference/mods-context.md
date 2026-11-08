@@ -10,7 +10,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 
 | Mod | Version | Role in the plan | Patched? |
 |---|---|---|---|
-| NuclearCraft | 2.19a → 2.19d | cause of the spikes; freeze, claims, guard | **yes** (`07`) |
+| NuclearCraft | 2.19a (stays; no update) | cause of the spikes; freeze, claims, guard | **yes** (`07`) |
 | Level Up! 2 | 1.1.23 | 2.3 ms/tick tile-entity scan | **yes** (`08`) |
 | Minecraft / Forge | 1.12.2 / 14.23.5.2860 | chunk loading + TE tick loop | **yes**, 3 small hooks (`07`) |
 | FermiumBooter | 1.4.1 | mixin loader at runtime | no (dependency) |
@@ -26,7 +26,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 ---
 
 ## NuclearCraft — **patched** (`07`)
-- **Jar:** `nuclearcraft-1.12.2-2.19a.jar`; CurseForge project **226254**. Step 1 moves the server to **2.19d** (`CF_EXCLUDE_MODS=226254`, jar via `~/srv/minecraft-extra/mods/`).
+- **Jar:** `nuclearcraft-1.12.2-2.19a.jar`; CurseForge project **226254**. **The server stays on 2.19a** (decided 2026-11-08): NC sets no `acceptableRemoteVersions`, so updating the server would force every client to update. We compile against 2.19a (`curse.maven:nuclearcraft-226254:6151363`).
 - **Source:** `github.com/tomdodd4598/NuclearCraft`, branch `1.12.2`. 2.19a = `37cc6e3`, 2.19d = `33568a8`. Between them only `nc/util/BlockFinder.java` changed among the classes we use → same mixins for both. 2.19d also ships a radiation-handler and processor auto-output fix.
 - **What's in the world:** Dregora's OTG places thousands of NC blocks in ruins/bunkers: 990 `fission_port`, 85 `fission_controller_new*` (overworld scan), plus active coolers, buffers, radiation scrubbers, passive generators, processors. No player-built fission reactor exists (owner, 2026-11-08).
 - **Reactor type:** the *old* fission multiblock (controller + casing box, ports, cells, coolers). `TileFissionController` (`.New`, `.Old`) extends `TileItemGenerator`.
@@ -51,7 +51,8 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 
 ## Level Up! 2 — **patched** (`08`)
 - **Jar:** server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar` (same version, different file names).
-- **Source:** `github.com/BeetoGuy/LevelUp2`. Branch `master` has `levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks` with the stream/lambda that matches the profile frames (`lambda$doFurnaceTicks$0`). Branch `1.12-rewrite` (modVersion 1.5.8, 2020) moved this into `CraftingSkillHandler`, so it is **not** the pack's code. ⚠ confirm against the 1.1.23 jar.
+- **Verified (javap of the 1.1.23 jar, 2026-11-08):** see `08 §1.2` — runs in END phase, `synchronized` on the list, attach handlers confirmed. CurseForge display name: "Level Up! Reloaded".
+- **Source:** `github.com/BeetoGuy/LevelUp2`. Branch `master` has `levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks` with the stream/lambda that matches the profile frames (`lambda$doFurnaceTicks$0`). Branch `1.12-rewrite` (modVersion 1.5.8, 2020) moved this into `CraftingSkillHandler`, so it is **not** the pack's code. Bytecode confirms `master` is close but not identical (`08 §1.2`).
 - **Problem:** every world tick it streams all of `world.loadedTileEntityList` and calls `hasCapability(MACHINE_PROCESSING, UP)` on each: 145 s / 54 min (≈ 2.3 ms/tick).
 - **Capability holders:** `TileEntityFurnace` and `TileEntityBrewingStand` (and subclasses), attached via `AttachCapabilitiesEvent`. `levelup2.api.IProcessor` is public API; no other pack mod is known to implement it (⚠ grep jars).
 - **Fix:** class prefilter + learning scan every 200 ticks; identical gameplay.
