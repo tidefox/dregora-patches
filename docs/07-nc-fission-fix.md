@@ -179,7 +179,7 @@ private void dp$tick(ITickable t, Operation<Void> original) {
 }
 ```
 `dp$isFrozen()`: false unless `cfg.nc.freezeReactorParts` and the TE is a frozen type outside every claim box; re-checked only when `ReactorClaims.epoch` (bumped on every claim/unclaim) differs from the TE's cached epoch. A frozen TE never runs `onAdded` (no `findController`) and never calls `pushEnergy` / `spreadFluid`. When a claim unfreezes many ports at once, spread their first tick over 20 ticks (`pos.hashCode() % 20`) to avoid a one-time hitch.
-⚠ verify: MixinExtras is available at runtime with FermiumBooter 1.4.1 (the live profile shows `wrapOperation$…fermiummixins…` frames, so some copy is loaded); check whether any pack mixin already redirects this call (`javap`/grep mixin configs for `updateEntities`).
+Verified (P0): FermiumBooter 1.4.1 bundles and initialises MixinExtras 0.5.0 (`reference/mods-context.md`). ⚠ verify: no pack mixin already redirects this call (`javap`/grep mixin configs for `updateEntities`).
 
 Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0 except for claimed reactors. The port↔controller loop that keeps ruins loaded is gone. Buffers / scrubbers / generators may still load chunks → step 3.
 
@@ -292,8 +292,8 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 ### 4.5 ⚠ Verify before writing the matching code
 | Item | How | Blocks |
 |---|---|---|
-| `FermiumRegistryAPI.enqueueMixin(boolean, String)` in 1.4.1 | javap the jar (skinbridge already uses it) | P0 |
-| MixinExtras `@WrapOperation` available at runtime under FermiumBooter 1.4.1 | jar listing / dev boot; else fall back to `@Redirect` + conflict check | freeze, scope |
+| ~~`FermiumRegistryAPI.enqueueMixin(boolean, String)` in 1.4.1~~ | ✔ P0: javap + smoke boot (early config needs the `injectData` fallback, `reference/mods-context.md`) | P0 |
+| ~~MixinExtras `@WrapOperation` available at runtime under FermiumBooter 1.4.1~~ | ✔ P0: MixinExtras 0.5.0 bundled in FermiumBooter 1.4.1 | freeze, scope |
 | No other pack mixin wraps/redirects `ITickable.update()` in `World.updateEntities`, or targets `ChunkProviderServer.loadChunk/getLoadedChunk` | grep mixin configs + classes in FermiumMixins, RLMixins, EagleMixins, SRPMixins, RLTweaker, fermiumasm | freeze, guard |
 | Forge 2860 `ChunkProviderServer.loadChunk(II Runnable)` calls `fetchDormantChunk` only when `getLoadedChunk` returned null; `getLoadedChunk` writes `unloadQueued = false` | decompile the server jar | guard |
 | `RLC_Nuclear` (Dregora 1.2.0-beta-2) doesn't already patch these classes | `unzip -l`, read its mixin config | everything NC |

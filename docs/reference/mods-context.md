@@ -15,7 +15,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 | Minecraft / Forge | 1.12.2 / 14.23.5.2860 | chunk loading + TE tick loop | **yes**, 3 small hooks (`07`) |
 | FermiumBooter | 1.4.1 | mixin loader at runtime | no (dependency) |
 | MixinBooter | 11.18 | annotations + annotation processor at compile time only | no (build only) |
-| MixinExtras | bundled ⚠ | `@WrapOperation` for the tick wrapper | no (dependency) |
+| MixinExtras | 0.5.0, bundled in FermiumBooter 1.4.1 | `@WrapOperation` for the tick wrapper | no (dependency) |
 | FermiumMixins / RLMixins / EagleMixins / SRPMixins | 1.0.10 / 1.4.6 / 1.2.4 / 2.9.2.2 | other mixin mods: conflict check | no |
 | RLC_Nuclear | 1.0.1 (Dregora 1.2.0-beta-2, not on server) | may already patch NC | no (check) |
 | OpenTerrainGenerator | v9.7 | generates the NC ruins | no |
@@ -67,13 +67,15 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 ## FermiumBooter — runtime mixin loader (dependency)
 - **Jar:** `FermiumBooter-1.4.1.jar`; CurseForge project **968474**, file **7279112** (used by `tidefox/skinbridge` via CurseMaven `curse.maven:fermiumbooter-968474:7279112`).
 - API: `fermiumbooter.FermiumRegistryAPI.enqueueMixin(boolean late, String config)`, called from our `IFMLLoadingPlugin` (constructor, retry in `injectData`). Early = vanilla targets, late = mod targets.
+- **Load order (verified in P0 smoke test, Forge 2860):** FermiumBooter's classes are *not* visible when our coremod constructor runs, whatever the jar names; we only see them in `injectData`, and by then FermiumBooter's own `injectData` has already flushed its early list with `Mixins.addConfiguration`. So `DregoraPatchesPlugin` registers the early config with `Mixins.addConfiguration` itself in that case (Mixin dedups configs by name). Late configs are still read from FermiumBooter's queue. Side effect: FermiumBooter's own config can't disable our early config; use `nc.*` switches in `dregorapatches.cfg` instead.
 - Provides Mixin at runtime; we must not require MixinBooter.
 
 ## MixinBooter — build only
 - `zone.rong:mixinbooter:11.18` from the CleanroomMC maven: compile-only, for the Mixin annotations and the annotation processor that writes the refmap. Never shipped, not in the pack (same as skinbridge).
 
-## MixinExtras — `@WrapOperation` (dependency) ⚠
-- Not a separate jar in `pack-mods.txt`, but the live profile shows `wrapOperation$…fermiummixins…` and `mixinextras$bridge` frames, so a copy is loaded at runtime (probably bundled with FermiumBooter/FermiumMixins). ⚠ confirm which jar provides it and its version; if it can't be relied on, fall back to `@Redirect` after checking no other mod redirects the same call.
+## MixinExtras — `@WrapOperation` (dependency)
+- **Verified (P0):** FermiumBooter 1.4.1 bundles MixinExtras **0.5.0** (`com/llamalad7/mixinextras/**`, incl. `injector/wrapoperation/WrapOperation`, in both CurseForge uploads 7212281 and 7279112) and initialises it in its coremod constructor (`MixinExtrasBootstrap.init`; boot log: `Initializing MixinExtras via …MixinExtrasServiceImpl(version=0.5.0)` with only FermiumBooter + our jars installed). `@WrapOperation` can be relied on at runtime.
+- Compile time: add MixinExtras as a compile-only dependency (and to the annotation processor path) when the first `@WrapOperation` is written; it is not on the classpath in P0.
 
 ## FermiumMixins, RLMixins, EagleMixins, SRPMixins, fermiumasm — conflict check only
 - `FermiumMixins-1.0.10`, `RLMixins-1.4.6`, `EagleMixins-1.2.4`, `SRPMixins-2.9.2.2`, `fermiumasm-5.28` (probably the source of the `mirror.normalasm.*` frames in the profile, a NormalASM fork ⚠).
