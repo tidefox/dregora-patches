@@ -17,7 +17,7 @@ docs/00-overview.md          scope, rules, phases, commands  ← start here
 docs/07-nc-fission-fix.md    Patches P1 (live lag problem)
 docs/08-levelup2-furnace-scan.md  Patches P1 (steady 2.3 ms/tick)
 docs/06-trick-shots.md       feature P2
-docs/03-killfeed.md          feature P3
+docs/03-killfeed.md          feature P3 (code done)
 docs/handoff/friendly-fire-rework.md  spec for the separate friendly-fire repo — not built here
 docs/ideas/                  parked — do not build unless asked
 docs/reference/handoff-nc-fission-lag.md   original lag investigation (server paths, spark/rcon commands)
@@ -65,11 +65,13 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 | P0 | setup above | builds + dev server boots |
 | **P1** | `dregorapatches`, plan decided in `docs/07 §3` + `docs/08`: owner records a baseline on the current NuclearCraft 2.19a (no code; NC stays on 2.19a, see `docs/07 §3` step 1) → you build one jar: NC **reactor freeze + claims** (fission controllers/ports/active coolers don't tick unless the reactor is claimed via `/reactor`; estimated coords by default, ops get `-exact` and keep-loaded; on), NC **chunk guard** (`ChunkProviderServer` hooks scoped to NC ticks; off by default), Level Up! 2 **furnace scan fix** (on), `/dpatch nc stats`, `/dpatch chunkloads` → owner measures → owner turns the guard on → measures again | no 45 s spikes over 15 min tickmonitor vs. the 2.19a baseline; a claimed reactor forms and runs; radiation near ruins unchanged |
 | P2 | features: core (`ProjectileOrigin`, `/dpatch debug damage`, `/dpatch debug kill`, config) → `06` trick shots | tests listed in the doc |
-| P3 | features: `03` kill feed | tests listed in the doc |
+| P3 | features: `03` kill feed (one follow-up line: weapon · distance · final hit · fight time) | tests listed in the doc |
 
 **P1 status: code done** (2026-11-08, `docs/07 §4.6`): freeze + claims, chunk guard, Level Up! 2 scan fix, `/reactor`, `/dpatch nc|levelup2 stats`, `/dpatch chunkloads`; all mixins apply on a real Forge 2860 server with NC 2.19a + Level Up! 2 (`ci/smoke.sh` now boots with them). Waiting on: owner baseline on the live server, then the live measurements. Still untested (needs a client): claim prompt/claim/unclaim, keep-loaded, owned-furnace bonus. Gotchas found: vanilla `EmptyChunk` is client-only (a mixin referencing it crashes the dedicated server even with `require = 0`); Forge-added methods like `loadChunk(IILRunnable)` need `remap = false`; `TileFissionController` can't be compiled against (OC/IC2 interfaces), read it by reflection.
 
 **P2 status: code done** (2026-11-08; built in Warband, moved into Dregora Patches the same day): core (`combat/ProjectileOrigin`/`ShotTag`, `combat/DebugProbe` = `/dpatch debug damage|kill|off`, `util/Chat`, `util/Fmt`, `PatchesConfig.trickshots`), `06` trick shots (`/trickshots [player]`, records in `world/data/dregorapatches_trickshots.dat`); smoke boots it and runs `/dpatch debug kill`, `/trickshots`. Still untested (needs a client): every in-game test in `06 §3`. Next: run `/dpatch debug damage` and `/dpatch debug kill` on the live pack (Blight/Champions/dragon markers → `trickshots.mobs` / `nbtMarkers`). Found: First Aid 1.6.22 cancels every player `LivingHurtEvent` at LOWEST (→ `LivingDamageEvent` never fires for players); `LivingDamageEvent`'s amount is after absorption.
+
+**P3 status: code done** (2026-11-08): `killfeed/` adds one line under the existing death message for PvP kills and announced-mob kills (`docs/03 §3`). Still untested (needs a client): every test in `03 §3`; message order under Scaling Health's Blight line.
 
 RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-beta-2 only; re-check if the server moves to 1.2.x). Keep Chunk Pregenerator idle during P1 measurements.
 
@@ -95,4 +97,4 @@ RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-bet
 - Small commits per step; update the module doc's "⚠ verify" items as they're resolved.
 
 ## Open questions for the user
-- Owner renames the GitHub repo `dregora-server-mods` → `dregora-patches` (Settings → General) and creates `tidefox/friendly-fire-rework`.
+- Owner creates `tidefox/friendly-fire-rework` (the rename to `dregora-patches` is done).

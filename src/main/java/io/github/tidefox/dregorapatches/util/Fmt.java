@@ -22,6 +22,12 @@ public final class Fmt {
         return num(ticks / 20.0) + "s";
     }
 
+    /** Whole seconds under a minute ({@code 42s}), else {@code 1m12s}. */
+    public static String duration(long ticks) {
+        long s = Math.max(0, ticks) / 20;
+        return s < 60 ? s + "s" : (s / 60) + "m" + String.format(Locale.ROOT, "%02d", s % 60) + "s";
+    }
+
     /**
      * Dot leader between a label and a right-hand value so that {@code label + leader}
      * is at least {@code width} characters: {@code "Wyvern ×3 " + "......"}. Chat uses a

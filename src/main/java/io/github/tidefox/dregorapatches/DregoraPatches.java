@@ -8,6 +8,7 @@ import io.github.tidefox.dregorapatches.combat.DebugProbe;
 import io.github.tidefox.dregorapatches.combat.ProjectileOrigin;
 import io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin;
 import io.github.tidefox.dregorapatches.diag.ChunkLoadTracer;
+import io.github.tidefox.dregorapatches.killfeed.KillFeedListener;
 import io.github.tidefox.dregorapatches.mixinsupport.MixinState;
 import io.github.tidefox.dregorapatches.reactor.CmdReactor;
 import io.github.tidefox.dregorapatches.reactor.ReactorChunkLoader;
@@ -48,6 +49,8 @@ public class DregoraPatches {
 
     private int ticks;
 
+    private final KillFeedListener killFeed = new KillFeedListener();
+
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         MinecraftForge.EVENT_BUS.register(new ReactorEvents());
@@ -57,6 +60,7 @@ public class DregoraPatches {
         MinecraftForge.EVENT_BUS.register(new ProjectileOrigin());
         MinecraftForge.EVENT_BUS.register(DebugProbe.INSTANCE);
         MinecraftForge.EVENT_BUS.register(new TrickShotListener());
+        MinecraftForge.EVENT_BUS.register(killFeed);
         ForgeChunkManager.setForcedChunkLoadingCallback(this, new ReactorChunkLoader());
     }
 
@@ -83,6 +87,7 @@ public class DregoraPatches {
         ReactorClaims.unload();
         ReactorChunkLoader.clear();
         AnnouncedMobs.clearCache();
+        killFeed.clear();
         DebugProbe.INSTANCE.off();
     }
 
