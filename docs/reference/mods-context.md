@@ -51,7 +51,8 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 
 ## Level Up! 2 — **patched** (`08`)
 - **Jar:** server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar` (same version, different file names).
-- **Source:** `github.com/BeetoGuy/LevelUp2`. Branch `master` has `levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks` with the stream/lambda that matches the profile frames (`lambda$doFurnaceTicks$0`). Branch `1.12-rewrite` (modVersion 1.5.8, 2020) moved this into `CraftingSkillHandler`, so it is **not** the pack's code. ⚠ confirm against the 1.1.23 jar.
+- **Verified (javap of the 1.1.23 jar, 2026-11-08):** see `08 §1.2` — runs in END phase, `synchronized` on the list, attach handlers confirmed. CurseForge display name: "Level Up! Reloaded".
+- **Source:** `github.com/BeetoGuy/LevelUp2`. Branch `master` has `levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks` with the stream/lambda that matches the profile frames (`lambda$doFurnaceTicks$0`). Branch `1.12-rewrite` (modVersion 1.5.8, 2020) moved this into `CraftingSkillHandler`, so it is **not** the pack's code. Bytecode confirms `master` is close but not identical (`08 §1.2`).
 - **Problem:** every world tick it streams all of `world.loadedTileEntityList` and calls `hasCapability(MACHINE_PROCESSING, UP)` on each: 145 s / 54 min (≈ 2.3 ms/tick).
 - **Capability holders:** `TileEntityFurnace` and `TileEntityBrewingStand` (and subclasses), attached via `AttachCapabilitiesEvent`. `levelup2.api.IProcessor` is public API; no other pack mod is known to implement it (⚠ grep jars).
 - **Fix:** class prefilter + learning scan every 200 ticks; identical gameplay.

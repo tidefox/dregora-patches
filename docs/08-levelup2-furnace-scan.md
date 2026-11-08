@@ -18,28 +18,35 @@ Lives in **Dregora Patches** (`dregorapatches`, late mixin config `mixins.dregor
   - Mantle `TileInventory`, Cooking for Blockheads `TileCounter`, …
 - The cost scales with the number of loaded tile entities (NC ruins that keep themselves loaded add to it; see `07`).
 
-### 1.2 Source (pack jar: server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar`; source read from BeetoGuy/LevelUp2 `master`, which matches the profile's class and lambda names; the `1.12-rewrite` branch moved this code to `CraftingSkillHandler` and is not what the pack runs)
+### 1.2 Source — verified against the 1.1.23 jar (javap, 2026-11-08)
+Pack jar: server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar` (same build; `mcmod.info`: modid `levelup2`, name "Level Up! Reloaded", version `1.1.23-1.12`, sha1 `e41da792…`). Reconstructed from the bytecode of `levelup2.skills.crafting.FurnaceEfficiencyBonus`:
 ```java
 @SubscribeEvent
 public void doFurnaceTicks(TickEvent.WorldTickEvent evt) {
-    if (evt.phase == TickEvent.Phase.START && !evt.world.isRemote) {
-        try {
-            List<TileEntity> tiles = evt.world.loadedTileEntityList.stream()
-                .filter(t -> t.hasCapability(PlayerCapability.MACHINE_PROCESSING, EnumFacing.UP))
+    if (evt.world.isRemote || evt.phase != TickEvent.Phase.END || evt.side != Side.SERVER) return;
+    List<IProcessor> procs = Lists.newArrayList();
+    try {
+        synchronized (evt.world.loadedTileEntityList) {
+            procs = evt.world.loadedTileEntityList.stream()
+                .filter(t -> t != null && t.hasCapability(PlayerCapability.MACHINE_PROCESSING, EnumFacing.UP))  // lambda$doFurnaceTicks$0
+                .map(t -> t.getCapability(PlayerCapability.MACHINE_PROCESSING, EnumFacing.UP))                  // lambda$doFurnaceTicks$1
                 .collect(Collectors.toList());
-            tiles.forEach(t -> {
-                IProcessor cap = t.getCapability(PlayerCapability.MACHINE_PROCESSING, EnumFacing.UP);
-                if (cap != null && cap.getPlayerFromUUID() != null) cap.extraProcessing(cap.getPlayerFromUUID());
-            });
-        } catch (ConcurrentModificationException e) { e.printStackTrace(); }
-    }
+        }
+    } catch (ConcurrentModificationException ignored) {}  // silently swallowed, no stack trace
+    procs.forEach(this::processTick);
+}
+private void processTick(IProcessor p) {
+    if (p != null && p.getPlayerFromUUID() != null) p.extraProcessing(p.getPlayerFromUUID());
 }
 ```
-- `MACHINE_PROCESSING` is attached via `AttachCapabilitiesEvent<TileEntity>` only when `instanceof TileEntityFurnace` (`FurnaceEfficiencyBonus`) or `instanceof TileEntityBrewingStand` (`BrewingEfficiencyBonus`). Modded furnaces that extend `TileEntityFurnace` get it too.
+Differences from the GitHub `master` snippet this plan was first written from: it runs in the **END** phase (not START), checks `side == SERVER`, `synchronized`s on the list, null-checks each TE, collects the capabilities (not the TEs) and swallows the CME silently. The fix below copies these semantics exactly.
+- `MACHINE_PROCESSING` is attached via `AttachCapabilitiesEvent<TileEntity>` only when `instanceof TileEntityFurnace` (`FurnaceEfficiencyBonus.registerFurnaceCapability`, key `levelup:furnacemods`) or `instanceof TileEntityBrewingStand` (`BrewingEfficiencyBonus.registerStandCapability`) — **verified**. The jar's only other `addCapability` is the player capability (`CapabilityEventHandler.onPlayerEntersWorld`). Modded furnaces that extend `TileEntityFurnace` get it too. Brewing stands are processed by the same `doFurnaceTicks` loop (there is no separate brewing tick).
+- `PlayerCapability.MACHINE_PROCESSING` is `public static` (non-final) `Capability<IProcessor>` — **verified**.
 - `IProcessor` is public API, so another mod *could* attach it to its own tile entities.
 - Effect per tick: owned furnaces (sneak-right-click with an empty hand registers an owner) get extra cook progress and bonus output based on the owner's skill. Unowned machines are skipped (`getPlayerFromUUID() == null`).
 
-⚠ verify against the 1.1.23 jar (javap): `doFurnaceTicks` signature, the two attach handlers and their `instanceof` checks. Grep the pack's jars for `levelup2/api/IProcessor` to see whether any other mod implements it.
+✔ `doFurnaceTicks(TickEvent.WorldTickEvent)` signature and both attach handlers verified against the jar.
+⚠ still open: grep the other pack jars for `levelup2/api/IProcessor` / `MACHINE_PROCESSING` (only possible with the jars; the learning scan covers it either way).
 
 ---
 
@@ -51,11 +58,11 @@ Replace the scan, keep the semantics.
 |---|---|---|
 | `FurnaceEfficiencyBonus.doFurnaceTicks(WorldTickEvent)` | HEAD, cancellable, `remap = false`, `require = 0` | if `levelup2.furnaceScanFix` → run our loop, cancel |
 
-Our loop, per server world tick (START phase, `!isRemote`):
+Our loop, per server world tick, under the same guard as the original (`!isRemote`, phase **END**, `side == SERVER`):
 1. Iterate `world.loadedTileEntityList` by index (it's an `ArrayList`; no stream, no intermediate list).
 2. **Cheap class filter:** skip unless the TE's class is in `CANDIDATES` (a `Set<Class<?>>`, identity-hashed, cached per class with a `ClassValue`-style map).
-3. For candidates, call exactly what the original does: `hasCapability(MACHINE_PROCESSING, UP)` → `getCapability` → `getPlayerFromUUID() != null` → `extraProcessing(owner)`.
-4. Keep the `ConcurrentModificationException` catch (log once instead of a stack trace every time).
+3. For candidates (non-null), call exactly what the original does: `hasCapability(MACHINE_PROCESSING, UP)` → `getCapability` → collect; then, after the scan, `getPlayerFromUUID() != null` → `extraProcessing(owner)` for each (collect first, process after, like the original, so `extraProcessing` never runs while we hold the list lock).
+4. Keep the `synchronized (loadedTileEntityList)` block around the scan and the `ConcurrentModificationException` catch (the original swallows it silently; we count it in stats).
 
 **`CANDIDATES`:**
 - Seeded with every loaded class assignable to `TileEntityFurnace` or `TileEntityBrewingStand` (that is what the attach handlers check).
