@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Boots a real Forge 1.12.2 dedicated server with FermiumBooter + Dregora Patches +
-# Warband (+ the patched mods, if given), runs "dpatch mixins", the stats commands and
+# Warband (+ the patched mods, if given), runs "dpatch mixins", the stats commands, /trickshots and
 # "wb reload" on the console, stops it, and fails on mixin errors/exceptions.
 # Boots with FermiumBooter sorting before and after our jar, with the patched mods;
 # then once without them (late configs must skip quietly).
@@ -91,6 +91,12 @@ if wait_for 'Done \([0-9.]+s\)! For help' "$BOOT_TIMEOUT"; then
   wait_for 'chunkloads: chunkloads over' 60 || status=1
   echo "wb reload" >&3
   wait_for '\[warband\]: Config reloaded' 60 || status=1
+  echo "wb debug kill 1" >&3
+  wait_for 'Logging the next 1 deaths caused by a player' 60 || status=1
+  echo "wb debug off" >&3
+  wait_for 'Warband debug off' 60 || status=1
+  echo "trickshots" >&3
+  wait_for 'No trick shots yet' 60 || status=1
 else
   status=1
 fi
@@ -119,6 +125,8 @@ require '\[dregorapatches\]: Dregora Patches .* ready' "dregorapatches started"
 require '\[dregorapatches\]: /dpatch mixins:' "/dpatch mixins ran"
 require '\[warband\]: Warband .* ready' "warband started"
 require '\[warband\]: Config reloaded' "/wb reload ran"
+require 'Logging the next 1 deaths caused by a player' "/wb debug kill ran"
+require 'No trick shots yet' "/trickshots read the (empty) records"
 require 'Stopping server' "server stopped cleanly"
 if [ "$mods_in" = 1 ]; then
   require 'patched: tick wrapper yes, NCTile yes, radiation scope yes, chunk guard yes' "/dpatch nc stats: all NC hooks patched"
