@@ -4,6 +4,8 @@ Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reac
 
 Lives in **Dregora Patches** (`dregorapatches`), not Warband: it's a mixin into another mod (plus two small vanilla hooks).
 
+Approach: **freeze** worldgen reactor parts (no player reactors exist) and **guard** NC so it never loads a chunk.
+
 Sources: `reference/handoff-nc-fission-lag.md` (investigation), `reference/spark-slowticks-summary.txt` (6 ticks > 1 s, 2026-11-07), `reference/spark-live-54min-summary.txt` (unfiltered 54 min live profile, 2026-11-05). Both summaries were produced with `tools/spark_summary.py`.
 
 ---
@@ -64,6 +66,8 @@ Sources: `reference/handoff-nc-fission-lag.md` (investigation), `reference/spark
 | `TileActiveCooler.spreadFluidToSide` | `getTileEntity(neighbor)`, no loaded check |
 | `TileRadiationScrubber.isOcclusive` | `world.getBlockState(otherPos)` for other radiation sources within `searchRadius`, no loaded check |
 | `RadiationHandler.updateWorldRadiation` | world tick; iterates `chunkProvider.getLoadedChunks()` only; sources = items/fluids read from each chunk's tile-entity inventories (not from TE ticking); spreading uses `getLoadedChunk` (never loads) |
+| `TileFissionController.checkStructure` / `run` | structure needs casing on all six faces; any failure → `complete = 0`; processing needs `complete == 1`; `heat` changes only while processing or complete; meltdown only when `heat >= getMaxHeat()` inside `update()` |
+| `IBufferable` | implemented by processors, nuclear furnace, fusion dummy, machine interface, active cooler → `buffer` is a general block, not reactor-only |
 | Public fields | `NCTile.isAdded`, `TileDummy.masterPosition`, `NCConfig.fission_max_size` (24), `NCConfig.machine_update_rate` |
 | 2.19a → 2.19d | `TileFissionPort`, `TileDummy`, `TileActiveCooler` identical; only `BlockFinder.java` changed → mixins apply to both |
 
@@ -97,172 +101,142 @@ The same thing happens with player-built NC setups that span several chunks: tod
 
 ## 2. Gameplay impact
 
-### 2.1 Result cache (step 2)
-None visible. A port gets the same answer it would have computed; it just doesn't recompute it every time its chunk reloads. Player edits near a port (place/break any NC block) drop the cached answer so the next load searches again.
+Owner facts (2026-11-08): no player has ever built a fission reactor; Dregora has no chunk loaders and doesn't need them; NC is only used as far as progression requires.
 
-### 2.2 Chunk guard (step 3) — "NC never loads a chunk or keeps one loaded"
+### 2.1 Reactor freeze (step 2)
+Worldgen reactor parts (fission controllers, fission ports, active coolers) don't tick unless a player has placed or right-clicked an NC block near them.
+- **Nothing visible changes for ruins.** Ruin ports don't form reactors, ruin coolers only move water between ruin coolers, and ruin controllers are idle (≈ 1 s of `TileItemGenerator` time in 54 min).
+- **A ruin can't overheat or melt down while frozen.** Heat only changes inside the controller's `update()`.
+- **Radiation is unchanged.** The world tick reads ruin inventories and tanks directly (§2.3), whether or not the blocks tick.
+- **Loot and inventories still work.** A frozen controller's GUI shows stale numbers until a right-click unfreezes it; then it ticks as normal.
+- **Player builds work as in vanilla NC.** Placing any `nuclearcraft:*` block, or right-clicking one, unfreezes every reactor part within `fission_max_size + 3` blocks, permanently (saved with the world). A player building a reactor next to a ruin brings that ruin back to life, which is the same as vanilla.
+- Buffers, scrubbers, generators, processors, batteries are **not** frozen: players use them. The chunk guard (step 3) handles their chunk loading.
+
+### 2.2 Chunk guard (step 3): NC never loads a chunk or keeps one loaded
 What changes:
-1. **NC setups stop acting as accidental chunk loaders.** Ruins nobody is near unload at the next autosave and stay unloaded — the same rule as every other machine in the pack. A player's multi-chunk NC build also stops running when every player leaves its area (it probably keeps itself loaded today). ⚠ ask the owner whether anyone relies on that.
-2. **Machines don't push into chunks that are unloaded or queued for unload.** Only happens at the edge of the loaded area, i.e. ≥ 10 chunks from every player. Same as vanilla redstone, hoppers and most modded pipes.
-3. **A reactor whose structure crosses into an unloaded chunk reads as incomplete** until that chunk loads, then forms on the next check. Again only far from players.
+1. **NC stops acting as an accidental chunk loader.** Ruins nobody is near unload at the next autosave and stay unloaded. Dregora has no chunk loaders, so player NC machines already stop when nobody is around; this only removes the accidental cases.
+2. **Machines don't push items, fluid or energy into chunks that are unloaded or queued for unload.** That only happens at the edge of the loaded area, ≥ 10 chunks from every player. The transfer is skipped, nothing is lost: items, fluid and energy stay in the source and move once both chunks are loaded. Same as vanilla hoppers and redstone.
+3. **No explosion or malfunction is possible from this.** The old fission controller only runs while its structure check passes, and that check requires casing on all six faces, top and bottom included, so every chunk a reactor overlaps contains casing. If any of those chunks reads as unloaded, the check fails (`CASING_INCOMPLETE`) → `complete = 0` → no processing, no heat change (`heat` only moves while processing or while complete). The reactor pauses, then resumes on the next check once the chunk loads. It never runs with part of its coolers unseen. (Source: `TileFissionController.checkStructure` / `run`, 2.19a.)
 
-What doesn't change: anything within players' view distance. Player chunks are never unloaded or queued, so the guard never triggers there.
+What doesn't change: anything within players' view distance. Player chunks are never unloaded or queued, so the guard never acts there.
 
 ### 2.3 Radiation
-Radiation is unchanged wherever a player can be:
-- NC simulates radiation **only in loaded chunks** (`RadiationHandler` iterates `getLoadedChunks()`; spreading picks only loaded neighbours). That's upstream behavior, not ours.
-- Ruin radiation comes from the world tick **reading the inventories/tanks** of tile entities in the chunk, not from those tile entities ticking. So ruin radiation exists whenever the ruin chunk is loaded, i.e. whenever a player is close enough to be exposed.
-- What stops: ruins far from everyone no longer "simulate" (decay/spread) in the background, because they no longer keep themselves loaded. The chunk's radiation level is saved with the chunk and resumes on load. That's how every other unloaded chunk already behaves.
-- Scrubber occlusion: positions in unloaded chunks count as empty → at most a slightly better scrubbing figure at the edge of the loaded area. Ruin scrubbers only scrub when active (`isActive`), which needs power.
-
-### 2.4 Freeze worldgen NC until a player interacts (step 4, optional)
-Idea: worldgen NC tile entities skip `update()` until a player interacts near them.
-- Radiation is **not** affected (see 2.3: it reads inventories in the world tick, not via `update()`).
-- Ruins do nothing visible while ticking (ports rarely form a reactor; buffers/coolers shuffle between ruin blocks; generators push power into nothing).
-- Extra gain over step 3: ruins **inside** players' view distance stop costing too. After step 3 that's the only NC ruin cost left.
-- Costs: there is no reliable "worldgen" marker. We'd keep a persistent set of positions players touched (place/break/right-click within a radius, including non-NC blocks such as a cable placed next to a ruin buffer). NC machines players built before the patch would freeze until someone interacts with them.
-- Decision: **only if** tickmonitor still shows ruin cost after step 3 **and** the owner confirms which NC builds exist on the server.
+Unchanged wherever a player can be:
+- NC simulates radiation **only in loaded chunks** (`RadiationHandler` iterates `getLoadedChunks()`; spreading picks only loaded neighbours). That's upstream behavior.
+- Ruin radiation comes from the world tick **reading tile-entity inventories/tanks** in the chunk, not from those tile entities ticking. Ruin radiation therefore exists whenever the chunk is loaded, i.e. whenever a player is close enough to be exposed. Freezing doesn't touch it.
+- What stops: ruins far from everyone no longer simulate (decay/spread) in the background, because they no longer keep themselves loaded. The chunk's radiation level is saved with the chunk and resumes on load, like every other unloaded chunk.
+- Scrubber occlusion: positions in unloaded chunks count as empty → at most a slightly better scrubbing figure at the edge of the loaded area. Scrubbers only scrub while active (powered).
 
 ---
 
 ## 3. Spec — plan (decided)
 
-Each step is measured on its own so its effect is visible. Everything from step 2 and 3 ships in one jar behind config switches, so the owner moves between steps with a config edit + restart.
+Each step is measured on its own. Steps 2 and 3 ship in one jar behind config switches; moving between them is a config edit + restart.
 
 ### Step 1 — NuclearCraft 2.19d (ops, no code)
 Owner, on the server:
 - `CF_EXCLUDE_MODS=226254`
 - 2.19d jar → `~/srv/minecraft-extra/mods/` (COPY_MODS_SRC)
 - verify exactly one nuclearcraft jar in `/data/mods`
-- `spark tickmonitor --threshold-tick 150` (15 min) → **baseline**; optionally a 30 min unfiltered `spark profiler` for `tools/spark_summary.py`.
+- `spark tickmonitor --threshold-tick 150` (15 min) → **baseline**; plus a 30 min unfiltered `spark profiler` for `tools/spark_summary.py`.
 
-Expected: smaller first-search cost, likely cheaper scrubber removal (radiation-handler fix). Spikes still there.
+Expected: cheaper scrubber removal (radiation-handler fix). Spikes still there.
 
-### Step 2 — Result cache (on by default)
-Target `nc.tile.dummy.TileFissionPort`, `remap = false`, `require = 0`.
+### Step 2 — Reactor freeze (on by default)
+**Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class just drops out of the set.
 
-| Inject | Point | Logic |
-|---|---|---|
-| `findController()V` | HEAD, cancellable | cache has `MISS` → `masterPosition = null`, cancel. Cache has `HIT(m)` and `isMaster(m)` → `masterPosition = m`, cancel. Else run the search. |
-| `findController()V` | RETURN | `hasMaster()` → store `HIT(masterPosition)`; else store `MISS` |
+**Unfrozen zones:** per dimension, a list of `BlockPos` (`WorldSavedData` `dregorapatches_nc`). A frozen-type TE ticks normally if it lies within `fission_max_size + 3` (Chebyshev) of any zone point.
+- Add a zone point on `BlockEvent.EntityPlaceEvent` (also receives multi-place) of any `nuclearcraft:*` block, and on `PlayerInteractEvent.RightClickBlock` on any `nuclearcraft:*` block (server side, real players only).
+- Zone points are never removed automatically (`/dpatch nc unfreeze-clear <radius>` for the owner).
 
-Key `(dimension, pos.toLong())`; value `long` master pos or a `MISS` sentinel (`Long.MIN_VALUE`).
+**Hook: the tick call itself**, not an NC method. NC `update()` methods chain through `super.update()` and do work after it (`TileFissionPort.update` = `super.update(); pushEnergy();`), so a HEAD inject on `NCTile.update` would miss part of the tick. Instead, wrap the `ITickable.update()` call inside `World.updateEntities` (early vanilla mixin, refmap) with MixinExtras `@WrapOperation`, which composes with other mods' wrappers instead of conflicting like `@Redirect` would:
+```java
+@WrapOperation(method = "updateEntities", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/ITickable;update()V"))
+private void dp$tick(ITickable t, Operation<Void> original) {
+    if (!(t instanceof DpNcTile) || ((TileEntity) t).getWorld().isRemote) { original.call(t); return; }
+    DpNcTile d = (DpNcTile) t;                      // duck interface added to NCTile by MixinNCTile
+    if (d.dp$isFrozen()) { NcStats.frozenTicks++; return; }   // cached; re-evaluated when Zones.epoch changes
+    NcScope.enter(t);
+    try { original.call(t); } finally { NcScope.exit(); }
+}
+```
+`dp$isFrozen()`: false unless `cfg.nc.freezeReactorParts` and the TE is a frozen type; `Zones.covers(world, pos)` is re-checked only when `Zones.epoch` (bumped on every new zone point) differs from the TE's cached epoch. A frozen TE never runs `onAdded` (no `findController`) and never calls `pushEnergy` / `spreadFluid`.
+⚠ verify: MixinExtras is available at runtime with FermiumBooter 1.4.1 (the live profile shows `wrapOperation$…fermiummixins…` frames, so some copy is loaded); check whether any pack mixin already redirects this call (`javap`/grep mixin configs for `updateEntities`).
 
-**Invalidation:** `BlockEvent.EntityPlaceEvent` (also receives multi-place) / `BlockEvent.BreakEvent` / `ExplosionEvent.Detonate` where the block's registry namespace is `nuclearcraft` → drop entries within `fission_max_size + 3` (Chebyshev) in that dimension. Clear a dimension on `WorldEvent.Unload`.
-Accepted gap: NC blocks changed by machines/other mods don't fire these events. Ruins are never edited (owner confirmed); player reactors are placed by players.
+Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0, including ruins near players. The port↔controller loop that keeps ruins loaded is gone. Buffers / scrubbers / generators may still load chunks → step 3.
 
-**Persistence (step 2b, off):** `WorldSavedData` per dimension. Only if post-restart spikes matter.
-
-Expected: `findController` cost gone (each port searches once per server run). The ruins still reload every 45 s, so some burst cost remains (disk loads, TE re-add, scrubber removal).
-
-### Step 3 — Chunk guard + search deferral (one switch, off by default)
-**Scope flag** — `NcScope` (static, server thread):
-- `NCTile.update()` HEAD → enter (only when `!world.isRemote`), RETURN → exit. Remember the TE class for stats.
+### Step 3 — Chunk guard (off by default, turned on after step 2 is measured)
+**Scope flag:** `NcScope` (static, server thread):
+- Entered around each NC tile-entity tick by the same `@WrapOperation` as step 2 (try/finally, so the whole tick including code after `super.update()` is in scope). Remembers the TE class for stats.
 - `RadiationHandler.updateWorldRadiation` HEAD → enter, RETURN → exit.
 - Reset to 0 at `ServerTickEvent` START (safety if an exception skipped an exit).
 
-**Guard** — two injections in `ChunkProviderServer` (early mixin, refmap), active only while `NcScope` is entered:
+**Guard:** two injections in `ChunkProviderServer` (early mixin, refmap), active only while `NcScope` is entered:
 1. `loadChunk(IILjava/lang/Runnable;)` at the `ForgeChunkManager.fetchDormantChunk` call (reached only when the chunk isn't loaded), cancellable → return a new `EmptyChunk(world, x, z)`. `World.getTileEntity` then returns `null`, `getBlockState` returns air, and `provideChunk` doesn't try to generate. The `CallbackInfoReturnable` is only allocated on this rare path.
-2. `getLoadedChunk(II)` `@Redirect` on the `PUTFIELD Chunk.unloadQueued` → skip the write while in scope. NC can still read a queued chunk this tick but no longer rescues it from unloading. No allocation.
+2. `getLoadedChunk(II)`: `@Redirect` the `PUTFIELD Chunk.unloadQueued` → skip the write while in scope. NC can still read a queued chunk this tick but no longer rescues it from unloading. No allocation.
 
-⚠ verify both injection points against a decompiled Forge 2860 `ChunkProviderServer` (the 54 min profile shows `loadChunk → fetchDormantChunk → syncChunkLoad`). Covers every NC caller in §1.2, including the interface default methods and the scrubber's `getBlockState`, without per-method patches.
+⚠ verify both injection points against a decompiled Forge 2860 `ChunkProviderServer` (the 54 min profile shows `loadChunk → fetchDormantChunk → syncChunkLoad`). This covers every NC caller in §1.2, including interface default methods and the scrubber's `getBlockState`, without per-method patches. Unfrozen ports are covered too: their `findController` sees air in unloaded chunks and gives the same "no controller" answer a reactor with a missing wall would.
 
-**Deferral** (same switch, required with the guard so the cache never stores a false `MISS`):
-- `TileFissionPort.onAdded()` HEAD, cancellable: if any chunk overlapping the ±(`fission_max_size` + 2) box is not loaded or is `unloadQueued` → cancel, set `dp$deferred = true`.
-- `NCTile.update()` RETURN: if `dp$deferred` → `isAdded = false; dp$deferred = false` so `onAdded` retries. Check at most every 20 ticks per port (counter field).
+Expected: ruins away from players unload at autosave and stay unloaded → no NC frames in `/dpatch chunkloads`, no 45 s bursts.
 
-Expected: ruins away from players unload at autosave and stay unloaded → bursts gone, `pushEnergy` per-tick cost drops to ruins near players.
-
-### Step 4 — Freeze worldgen NC (not planned; see §2.4)
+### Fallback — port result cache (not built unless step 2 is rejected)
+Cache `findController` results per `(dim, pos)` (hit → master pos, miss), invalidated by NC place/break/explosion within `fission_max_size + 3`; needs search deferral when the guard is on so the cache never stores a false miss. Superseded by the freeze because no player reactors exist.
 
 ### Config (`config/dregorapatches.cfg`)
-`nc.resultCache = true`, `nc.persistCache = false`, `nc.chunkGuard = false`, `nc.logStats = false`.
+`nc.freezeReactorParts = true`, `nc.chunkGuard = false`, `nc.logStats = false`, `levelup2.furnaceScanFix = true` (`08`).
 
 ### Commands
-- `/dpatch nc stats` — cache size per dim (hits / misses); searches run / skipped / deferred since start; guard blocks by TE class; "patched: yes/no" per mixin config.
-- `/dpatch chunkloads <seconds>` — logs every `ChunkEvent.Load` not caused by the player chunk map (skip stacks with `PlayerChunkMapEntry` or `ChunkIOProvider`), aggregated by first frame outside `net.minecraft`/`net.minecraftforge`, with chunk coords. Confirms the guard: after step 3 no NC frames should appear.
+- `/dpatch nc stats`: frozen TEs by type and dimension, zone points, frozen ticks skipped, guard blocks by TE class, "patched: yes/no" per mixin config.
+- `/dpatch nc unfreeze-clear <radius>`: remove zone points within radius of the sender (op).
+- `/dpatch chunkloads <seconds>`: logs every `ChunkEvent.Load` not caused by the player chunk map (skip stacks with `PlayerChunkMapEntry` or `ChunkIOProvider`), aggregated by first frame outside `net.minecraft`/`net.minecraftforge`, with chunk coords.
 
 ### Not doing
-- `fission_max_size` reduction — caps player reactors.
-- Removing ruin blocks — crashed the server once (active cooler).
-- Gating `pushEnergy` to `machine_update_rate` — would change player reactor output.
+- `fission_max_size` reduction: caps player reactors.
+- Removing ruin blocks: crashed the server once (active cooler).
+- Gating `pushEnergy` to `machine_update_rate`: would change player reactor output.
 - Upstream: worth an issue/PR on NuclearCraft `1.12.2` with both profile summaries.
 
 ---
 
 ## 4. Implementation plan
 
-### 4.1 Layout
+### 4.1 Layout (package root `io.github.tidefox.dregorapatches`)
 ```
-dregorapatches/
-  DregoraPatchesPlugin.java    IFMLLoadingPlugin → enqueueMixin(false, vanilla) + enqueueMixin(true, nc / levelup2)
-  DregoraPatches.java          @Mod(acceptableRemoteVersions = "*", dependencies = "after:nuclearcraft;after:levelup2")
-  PatchesConfig.java
-  nc/PortCache.java            result cache
-  nc/NcInvalidation.java       place / break / explosion / world unload
-  nc/NcScope.java              scope flag + guard stats
-  nc/PortCacheData.java        WorldSavedData (step 2b)
-  mixin/nc/MixinTileFissionPort.java   findController HEAD/RETURN, onAdded deferral
-  mixin/nc/MixinNCTile.java            update HEAD/RETURN (scope, deferral retry)
-  mixin/nc/MixinRadiationHandler.java  updateWorldRadiation HEAD/RETURN (scope)
-  mixin/vanilla/MixinChunkProviderServer.java  guard
-  mixin/levelup2/MixinFurnaceEfficiencyBonus.java   (doc 08)
-  diag/ChunkLoadTracer.java
-  cmd/CmdDpatch.java
+core/DregoraPatchesPlugin.java     IFMLLoadingPlugin → enqueueMixin(false, vanilla) + enqueueMixin(true, nc / levelup2)
+core/FermiumCompat.java            isolates FermiumRegistryAPI (same pattern as skinbridge)
+DregoraPatches.java                @Mod(acceptableRemoteVersions = "*", dependencies = "after:nuclearcraft;after:levelup2")
+PatchesConfig.java
+mixinsupport/PatchesMixinPlugin.java, MixinState.java   log + record applied mixins
+nc/FrozenTypes.java                class-name → Class set
+nc/Zones.java                      unfrozen zone points + epoch
+nc/ZonesData.java                  WorldSavedData
+nc/NcEvents.java                   place / right-click → zone point; world unload
+nc/NcScope.java                    scope flag + guard stats
+mixin/nc/MixinNCTile.java          implements DpNcTile (frozen-type flag, cached frozen state + epoch)
+mixin/vanilla/MixinWorld.java      @WrapOperation ITickable.update() in updateEntities (freeze + scope)
+mixin/nc/MixinRadiationHandler.java  updateWorldRadiation HEAD/RETURN (scope)
+mixin/vanilla/MixinChunkProviderServer.java  guard
+mixin/levelup2/MixinFurnaceEfficiencyBonus.java   (doc 08)
+diag/ChunkLoadTracer.java
+cmd/CmdDpatch.java
 resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 ```
+`MixinNCTile` adds `@Unique` fields `dp$frozenType` (computed once from `FrozenTypes`), `dp$frozen`, `dp$zoneEpoch` and implements `DpNcTile`. Freeze and scope live in `MixinWorld` because NC `update()` overrides do work after `super.update()`.
 
-### 4.2 Code sketch (step 2)
-```java
-@Mixin(value = TileFissionPort.class, remap = false)
-public abstract class MixinTileFissionPort {
-
-    @Inject(method = "findController()V", at = @At("HEAD"), cancellable = true, require = 0)
-    private void dp$useCache(CallbackInfo ci) {
-        TileEntity te = (TileEntity) (Object) this;
-        World w = te.getWorld();
-        if (w == null || w.isRemote || !PatchesConfig.nc.resultCache) return;
-        long v = PortCache.get(w, te.getPos());
-        if (v == PortCache.ABSENT) return;
-        TileDummy<?> d = (TileDummy<?>) (Object) this;
-        if (v == PortCache.MISS) { d.masterPosition = null; PortCache.skipped++; ci.cancel(); return; }
-        BlockPos m = BlockPos.fromLong(v);
-        if (d.isMaster(m)) { d.masterPosition = m; PortCache.skipped++; ci.cancel(); }
-    }
-
-    @Inject(method = "findController()V", at = @At("RETURN"), require = 0)
-    private void dp$record(CallbackInfo ci) {
-        TileEntity te = (TileEntity) (Object) this;
-        World w = te.getWorld();
-        if (w == null || w.isRemote || !PatchesConfig.nc.resultCache) return;
-        PortCache.searched++;
-        TileDummy<?> d = (TileDummy<?>) (Object) this;
-        PortCache.put(w, te.getPos(), d.hasMaster() ? d.masterPosition.toLong() : PortCache.MISS);
-    }
-}
-```
-A cancelled HEAD returns immediately; RETURN injectors only run on the original method's return paths.
-
-`PortCache`: `Int2ObjectOpenHashMap<Long2LongOpenHashMap>` with `defaultReturnValue(ABSENT)`. Minecraft 1.12 bundles fastutil 7.x: use `LongIterator`/`ObjectIterator` + `remove()` for `invalidateNear`, not `removeIf` with a primitive lambda.
-
-⚠ verify:
-- `BlockEvent.EntityPlaceEvent` exists in Forge 2860 (older builds: `PlaceEvent`); subscribing to the parent also receives the multi-place subclass.
-- `ResourceLocation#getNamespace` vs `getResourceDomain` (mappings).
-- Referencing `NCConfig` from `NcInvalidation` makes NC a hard class dependency → register only if `Loader.isModLoaded("nuclearcraft")`.
-
-### 4.3 Steps
-0. Owner runs `unzip -l RLC_Nuclear*.jar` — if it already mixes into `TileFissionPort`, stop and evaluate. Also list mixin configs in RLMixins 1.4.6 / FermiumMixins for NC targets.
+### 4.2 Steps
+0. Owner runs `unzip -l RLC_Nuclear*.jar`: if it already mixes into these classes, stop and evaluate. Also list mixin configs in RLMixins 1.4.6 / FermiumMixins for NC targets.
 1. Owner: NuclearCraft 2.19d + baseline (§3 step 1).
-2. Build the jar (cache + guard + deferral + tracer + stats + `08`). Test in dev (§4.4). Hand to owner.
-3. Live, cache on / guard off → 15 min tickmonitor + `/dpatch nc stats`.
+2. Build the jar (freeze + guard + tracer + stats + `08`). Test in dev (§4.3). Hand to owner.
+3. Live, freeze on / guard off → 15 min tickmonitor + `/dpatch nc stats` + 30 min profile.
 4. Live, guard on → 15 min tickmonitor; `/dpatch chunkloads 300` shows no NC frames.
-5. 2b persistence / step 4 freeze only if numbers call for it.
 
-### 4.4 Tests
-- Dev world with a copied ruin: `/dpatch nc stats` shows each port searched once; reload chunk → `skipped` increments.
-- Build a fission reactor next to a cached ruin port → port links (invalidation works). Break the controller → reactor unforms as in vanilla NC.
-- Guard on: teleport away from a ruin, wait one autosave → its chunks unload (`/forge tps` loaded-chunk count drops; `/forge track te` shows no ruin TEs). Return → ruin TEs tick, radiation readings near the ruin match guard-off.
-- Reactor straddling a chunk border near a player → forms and outputs as with the guard off.
+### 4.3 Tests
+- Dev world with a copied ruin: `/dpatch nc stats` shows ruin ports/coolers/controllers frozen; `/forge track te` shows them gone from the tick list cost.
+- Build a fission reactor next to a frozen ruin → placing the first NC block unfreezes the area; the reactor forms, runs, and the ruin ports in range behave as in vanilla NC. Restart → still unfrozen.
+- Right-click a frozen ruin controller → GUI updates after the click.
+- Radiation: Geiger counter readings near a ruin with freeze on/off match.
+- Guard on: teleport away from a ruin, wait one autosave → its chunks unload (`/forge tps` loaded-chunk count drops). Return → readings match guard-off.
+- Reactor straddling a chunk border near a player → forms and outputs as with the guard off. Reactor straddling into an unloaded chunk (dev: force-unload) → pauses (`CASING_INCOMPLETE`), heat constant, resumes on load.
 - NuclearCraft 2.19a **and** 2.19d → all mixins apply (stats show "patched: yes").
-- Remove the jar → world loads normally (nothing written unless 2b on).
+- Remove the jar → world loads normally; `data/dregorapatches_nc.dat` is ignored.
 - Live: 15 min `spark tickmonitor --threshold-tick 150`, 2 players idle → no 45 s spikes; compare with the step 1 baseline.

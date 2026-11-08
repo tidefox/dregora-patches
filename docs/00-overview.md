@@ -17,7 +17,7 @@ Kept separate on purpose: Warband must stay a plain, removable mod; Patches is a
 
 | Doc | Module | Mod | Phase | Changes gameplay? |
 |---|---|---|---|---|
-| `07-nc-fission-fix.md` | NuclearCraft ruin fix: result cache, chunk guard, tracer | Patches | **P1** | cache: no. Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
+| `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | Patches | **P1** | freeze: no visible change (no player reactors). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
 | `08-levelup2-furnace-scan.md` | Level Up! 2 per-tick tile-entity scan | Patches | **P1** | no |
 | `05-death-recap.md` | Private death recap | Warband | **P2** | no |
 | `06-trick-shots.md` | Trick shots (announced mobs only) | Warband | **P2** | no |
@@ -55,10 +55,10 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | Phase | Deliverable | Done when |
 |---|---|---|
 | P0 | Both folders scaffolded from CleanroomMC TemplateDevEnv; `./gradlew build` green; `runServer` boots | jars build, server starts with jars in dev |
-| P1 | Patches: owner moves NC to 2.19d (baseline) → one jar: NC result cache (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
+| P1 | Patches: owner moves NC to 2.19d (baseline) → one jar: NC reactor freeze (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
 | P2 | Warband: core + 05 + 06 | recap delivered on respawn; trick shot fires only on announced mobs |
 | P3 | Warband: 03, then 04 | per doc tests |
 
 ## Open decisions (defaults in use)
-- Java package root: `io.github.<github-handle>` — **ask the user** before scaffolding.
+- Java package root: `io.github.tidefox.<modid>` (decided; build layout follows `tidefox/skinbridge`, see `CLAUDE.md` Setup).
 - FF ally mode `ALL_PLAYERS`, curve `1.0/1.0/0.6/0.3/0.0`, lethal floor 4 HP.

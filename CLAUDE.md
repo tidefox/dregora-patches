@@ -38,25 +38,33 @@ Docs marked **⚠ verify** are API/behavior claims not yet confirmed against the
 6. Never edit the live server's world files. Anything touching the server (deploy, restart, rcon) → ask the user first.
 
 ## Setup (P0)
-1. Ask the user for the Java package root (`io.github.<handle>`) — don't guess.
-2. Into each folder, copy CleanroomMC **TemplateDevEnv** (https://github.com/CleanroomMC/TemplateDevEnv; RetroFuturaGradle, Gradle 8, Java 8 toolchain). Set in `gradle.properties`:
-   - `warband/`: `mod_id = warband`, `mod_name = Warband`, `root_package = <root>`, `use_mixins = false`, `enable_junit_testing = true`.
-   - `dregorapatches/`: `mod_id = dregorapatches`, `mod_name = Dregora Patches`, `is_coremod = true`, `coremod_includes_mod = true`, `coremod_plugin_class_name = <root>.dregorapatches.DregoraPatchesPlugin`, `use_mixins = true` (annotation processor), `mixin_configs = mixins.dregorapatches.nc.json`.
-3. `dregorapatches/libs/` (git-ignored, user supplies from the server's `mods/`): `nuclearcraft-1.12.2-2.19a.jar`, `FermiumBooter-1.4.1.jar` → `compileOnly` + dev runtime.
-4. ⚠ Decide dev-runtime mixin loader: TemplateDevEnv's `use_mixins` pulls **MixinBooter**; the pack uses **FermiumBooter**. Either run dev with FermiumBooter and exclude MixinBooter from runtime, or support both loaders. Production jar must work with FermiumBooter 1.4.1 alone. Confirm `FermiumRegistryAPI.enqueueMixin(boolean late, String)` exists in 1.4.1 (javap the jar).
-5. `./gradlew build` and `./gradlew runServer` green in both folders. Commit.
+Package root: **`io.github.tidefox.<modid>`** (`io.github.tidefox.warband`, `io.github.tidefox.dregorapatches`), same as `tidefox/unrest`.
+
+Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBooter coremod for this same server), not TemplateDevEnv:
+1. Per folder: standalone RetroFuturaGradle `2.0.3` `build.gradle` + `settings.gradle` (GTNH maven, foojay toolchain resolver), Gradle wrapper 9.7, Java 8 toolchain, MCP `stable_39`.
+2. `dregorapatches/` only:
+   - Mixin annotations + annotation processor from MixinBooter `zone.rong:mixinbooter:11.18`, **compile-only** (`modUtils.enableMixins(..., 'mixins.dregorapatches.refmap.json')`), never shipped. FermiumBooter provides Mixin at runtime.
+   - FermiumBooter 1.4.1 via CurseMaven `curse.maven:fermiumbooter-968474:7279112`, compile-only.
+   - NuclearCraft and Level Up! 2 compile-only via CurseMaven (find file ids like skinbridge's `ci/find-fermium-id.py`) or `libs/` (git-ignored) as a fallback.
+   - Jar manifest: `FMLCorePlugin = io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin`, `FMLCorePluginContainsFMLMod = true`, `ForceLoadAsMod = true`.
+   - Coremod: `FermiumCompat` (resource-lookup presence check, `enqueueMixin(boolean late, String)` isolated in one class), enqueue in the constructor with an `injectData` retry; `mixinsupport/` config plugin that logs and records applied mixins (`MixinState`), used by `/dpatch … stats`.
+   - Mixin configs: `mixins.dregorapatches.vanilla.json` (early, refmap), `…nc.json` and `…levelup2.json` (late, `remap = false`); all `"required": false`, `"injectors": {"defaultRequire": 0}`.
+3. `ci/smoke.sh` + `.github/workflows/build.yml` as in skinbridge: build, unit tests, boot a real Forge 2860 dedicated server with FermiumBooter + the jar, fail on mixin errors.
+4. `./gradlew build` green in both folders; smoke test boots. Commit.
 
 ## Phase order
 | Phase | Work | Acceptance |
 |---|---|---|
 | P0 | setup above | builds + dev server boots |
-| **P1** | `dregorapatches`, plan decided in `docs/07 §3` + `docs/08`: owner updates NuclearCraft to 2.19d and records a baseline (no code) → you build one jar: NC **result cache** on `TileFissionPort.findController()V` (on), NC **chunk guard + search deferral** (`ChunkProviderServer` hooks scoped to NC ticks, off by default), Level Up! 2 **furnace scan fix** (on), `/dpatch nc stats`, `/dpatch chunkloads` → owner measures cache → owner turns the guard on → measures again | no 45 s spikes over 15 min tickmonitor vs. the 2.19d baseline; player-built reactor still forms; radiation near ruins unchanged |
+| **P1** | `dregorapatches`, plan decided in `docs/07 §3` + `docs/08`: owner updates NuclearCraft to 2.19d and records a baseline (no code) → you build one jar: NC **reactor freeze** (worldgen fission controllers/ports/active coolers don't tick until a player places or right-clicks an NC block nearby; on), NC **chunk guard** (`ChunkProviderServer` hooks scoped to NC ticks; off by default), Level Up! 2 **furnace scan fix** (on), `/dpatch nc stats`, `/dpatch chunkloads` → owner measures → owner turns the guard on → measures again | no 45 s spikes over 15 min tickmonitor vs. the 2.19d baseline; a reactor built next to a ruin still forms; radiation near ruins unchanged |
 | P2 | `warband`: core (`ProjectileOrigin`, `/wb debug damage`, `/wb debug kill`, config) → `05` recap → `06` trick shots | tests listed in each doc |
 | P3 | `warband`: `03` kill feed, then `04` friendly fire | tests listed in each doc |
 
 Before P1 code: ask the user to run `unzip -l RLC_Nuclear*.jar` (Dregora 1.2.0-beta-2 adds it) — if it already mixes into `TileFissionPort`, stop and reassess.
 
 ## Facts already verified (don't re-research)
+- Owner: no player-built fission reactors exist; no chunk loaders in the pack; NC is only used as far as progression needs.
+- Old fission controller only runs while all six casing faces are present (`complete == 1`); heat only changes while running → an unloaded part pauses the reactor, it can't melt down from it.
 - Profiles (`docs/07 §1.2`): ≈ 90% of main-thread disk chunk loads come from NC tile entities (`TileDummy.isMaster`, scrubber `isOcclusive`, port/buffer/generator neighbour pushes). Linked ruin ports call `getMaster()` every tick from `pushEnergy`, keeping controller chunks loaded; ruins keep themselves loaded with no player or chunk loader. `findController` cost is mostly `getTileEntity → getPendingTileEntityAt`, not `BlockFinder`.
 - NC radiation (`RadiationHandler.updateWorldRadiation`) only simulates loaded chunks, reads TE inventories directly (not via TE ticking) and spreads only to loaded neighbours.
 - Level Up! 2 `FurnaceEfficiencyBonus.doFurnaceTicks` streams the whole `loadedTileEntityList` every world tick calling `hasCapability`; the capability is only attached to `TileEntityFurnace` / `TileEntityBrewingStand` subclasses (source: BeetoGuy/LevelUp2 — ⚠ verify against the 1.1.23 jar).
@@ -76,5 +84,4 @@ Before P1 code: ask the user to run `unzip -l RLC_Nuclear*.jar` (Dregora 1.2.0-b
 - Small commits per step; update the module doc's "⚠ verify" items as they're resolved.
 
 ## Open questions for the user
-- Java package root / GitHub handle.
 - Friendly fire numbers (curve, lethal floor) — defaults in `docs/04`.
