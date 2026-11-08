@@ -24,6 +24,7 @@ docs/04-friendly-fire.md     Warband P3
 docs/ideas/                  parked — do not build unless asked
 docs/reference/handoff-nc-fission-lag.md   original lag investigation (server paths, spark/rcon commands)
 docs/reference/pack-mods.txt               exact mod jars on the server
+docs/reference/mods-context.md             every mod the plan touches: versions, sources, classes, risks
 docs/reference/spark-*-summary.txt         profile summaries (tools/spark_summary.py)
 tools/spark_summary.py                     dependency-free .sparkprofile → text summary
 ```

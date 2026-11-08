@@ -1,8 +1,10 @@
 # 07 — NuclearCraft ruin fix (fission port tick spikes) · Dregora Patches
 
-Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reactor ruins, and the steady NC cost they add every tick, without changing what players see.
+Status: **plan final** (2026-11-08). Next: P0 scaffolding (`CLAUDE.md` Setup), then §4. Mod versions and facts per mod: `reference/mods-context.md`.
 
-Lives in **Dregora Patches** (`dregorapatches`), not Warband: it's a mixin into another mod (plus two small vanilla hooks).
+Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reactor ruins, and the steady NC cost they add every tick. The one gameplay change: a fission reactor runs only after a player claims it (§2.1).
+
+Lives in **Dregora Patches** (`dregorapatches`), not Warband: it reads and patches NuclearCraft classes (plus three small vanilla hooks).
 
 Approach: **freeze** reactor parts unless a player has **claimed** the reactor (no player reactors exist yet), and **guard** NC so it never loads a chunk.
 
@@ -93,11 +95,13 @@ autosave: queue ≥ 100 chunks → unload in batches over ~3 ticks → survivors
 The same thing happens with player-built NC setups that span several chunks: today they likely keep themselves loaded too.
 
 ### 1.6 Platform
-- Pack ships **FermiumBooter 1.4.1** (+ FermiumMixins, RLMixins, MixinExtras). No MixinBooter.
-- Register from an `IFMLLoadingPlugin` constructor: `FermiumRegistryAPI.enqueueMixin(boolean late, String config)` ⚠ javap the 1.4.1 jar to confirm the signature.
-  - `mixins.dregorapatches.vanilla.json` — early (`late = false`), targets `ChunkProviderServer`, needs a refmap (SRG).
-  - `mixins.dregorapatches.nc.json` — late, `remap = false`, no refmap.
-- All configs `"required": false`; every injector `require = 0`.
+- Pack ships **FermiumBooter 1.4.1** (+ FermiumMixins, RLMixins, EagleMixins, SRPMixins). No MixinBooter at runtime.
+- Register from an `IFMLLoadingPlugin` constructor (retry in `injectData`), as in `tidefox/skinbridge`: `FermiumRegistryAPI.enqueueMixin(boolean late, String config)`.
+  - `mixins.dregorapatches.vanilla.json`: early (`late = false`), targets `World` (tick wrapper) and `ChunkProviderServer` (guard), needs a refmap (SRG).
+  - `mixins.dregorapatches.nc.json`: late, `remap = false`, targets `NCTile` (duck interface) and `RadiationHandler` (scope).
+  - `mixins.dregorapatches.levelup2.json`: late, `remap = false` (`08`).
+- All configs `"required": false`, `"injectors": {"defaultRequire": 0}`; a config plugin records which mixins applied (`/dpatch … stats`).
+- Server-only: every hook checks `!world.isRemote`; `@Mod(acceptableRemoteVersions = "*")`; all text is `TextComponentString`.
 
 ---
 
@@ -145,16 +149,17 @@ Owner, on the server:
 Expected: cheaper scrubber removal (radiation-handler fix). Spikes still there.
 
 ### Step 2 — Reactor freeze + claims (on by default)
-**Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class drops out of the set. A frozen-type TE ticks only if it lies inside a **claim box**: ±(`fission_max_size` + 2) around a claimed controller, same dimension.
+**Frozen types:** tile entities that are `instanceof` `nc.tile.generator.TileFissionController` (covers `.New`, `.Old`), `nc.tile.dummy.TileFissionPort`, `nc.tile.fluid.TileActiveCooler`. Resolved by class name at startup; a missing class drops out of the set. A frozen-type TE ticks only if it lies inside a **claim box**: ±(`fission_max_size` + 2) around a claimed controller, same dimension. That box contains every block of any reactor the controller can belong to; ruin parts that happen to fall inside it tick too, as they would in vanilla.
 
 **Claiming:**
 1. `BlockEvent.EntityPlaceEvent`: a real `EntityPlayerMP` places a `nuclearcraft:fission_controller_*` block → issue a pending token (random, in memory, expires after 5 min) and send that player only:
    `[Reactor] Fission controller placed near ≈ -1700, 0. [Claim this reactor]` — the bracket is a `ClickEvent.RUN_COMMAND` for `/reactor claim <token>` (`TextComponentString`, no lang keys).
-2. `/reactor claim` without a token: ray-trace ≤ 5 blocks; must hit a fission controller that the player placed this server run (token exists for that pos) or that is unclaimed and was placed by a player (tracked in the claim data as "placed, unclaimed"). Worldgen controllers can't be claimed in place; they must be broken and replaced.
-3. Validation: controller still there, not claimed by anyone, owner's claim count < `reactor.maxClaimsPerPlayer` (0 = unlimited, default 0).
+   Every player-placed controller is also recorded as `placed {dim, pos, placerUUID}` in the claim data (survives restarts; removed when the controller is broken).
+2. `/reactor claim` without a token: ray-trace ≤ 5 blocks; must hit a controller with a `placed` record. Worldgen controllers have none, so they can't be claimed in place: break and replace them.
+3. Validation: controller still there; claimer is the placer (ops may claim any `placed` controller); not already claimed; owner's claim count < `reactor.maxClaimsPerPlayer` (0 = unlimited, default 0). Tokens are single-use and bound to the placer's UUID.
 4. On claim: store `{id, dim, pos, ownerUUID, ownerName, created, keepLoaded=false, lastStatus}`; bump `ReactorClaims.epoch` so TEs in the box re-evaluate.
 
-**Ending a claim:** `BlockEvent.BreakEvent` on a claimed controller, `/reactor unclaim <id>` (owner), `/reactor admin unclaim <id>` (op). Also checked lazily: when a claimed controller's chunk is loaded and there's no controller at `pos` (explosion, other mod) → remove. Owner gets a chat message if online. Keep-loaded tickets are released with the claim.
+**Ending a claim:** `BlockEvent.BreakEvent` on a claimed controller, `/reactor unclaim <id>` (owner), `/reactor admin unclaim <id>` (op). Also checked lazily: when a claimed controller's chunk is loaded and there's no controller at `pos` (explosion, other mod) → remove. Owner gets a chat message if online. Keep-loaded tickets are released with the claim. "Controller present" means a `TileFissionController` TE at `pos`, not a block id: NC swaps `_idle`/`_active` blocks while running, which fires no break event and must not end a claim.
 
 **Status snapshot:** every 100 ticks, for each claimed controller whose chunk is loaded, read public fields `complete`, `isProcessing`, `problem`, `heat` / `getMaxHeat()`, `currentEnergyStored` into `lastStatus` (+ time). Never loads a chunk.
 
@@ -196,7 +201,17 @@ Expected: ruins away from players unload at autosave and stay unloaded → no NC
 Cache `findController` results per `(dim, pos)` (hit → master pos, miss), invalidated by NC place/break/explosion within `fission_max_size + 3`; needs search deferral when the guard is on so the cache never stores a false miss. Superseded by the freeze because no player reactors exist.
 
 ### Config (`config/dregorapatches.cfg`)
-`nc.freezeReactorParts = true`, `nc.chunkGuard = false`, `nc.logStats = false`, `reactor.maxClaimsPerPlayer = 0` (unlimited), `reactor.coordEstimate = 100`, `reactor.allowKeepLoaded = true` (ops only), `levelup2.furnaceScanFix = true` (`08`).
+| Key | Default | Meaning |
+|---|---|---|
+| `nc.freezeReactorParts` | `true` | step 2; `false` = every reactor ticks as in vanilla (claims still listed) |
+| `nc.chunkGuard` | `false` | step 3; turn on after step 2 is measured |
+| `nc.logStats` | `false` | periodic stats line in the log |
+| `reactor.maxClaimsPerPlayer` | `0` | 0 = unlimited |
+| `reactor.coordEstimate` | `100` | rounding (blocks) for X/Z shown to everyone without `-exact` |
+| `reactor.allowKeepLoaded` | `true` | allows the op-only keep-loaded command |
+| `levelup2.furnaceScanFix` | `true` | `08` |
+
+**Data:** `world/data/dregorapatches_reactors.dat` (global `MapStorage`): `placed` records, claims, keep-loaded flags, last status.
 
 ### Commands
 | Command | Who | What |
@@ -244,16 +259,21 @@ diag/ChunkLoadTracer.java
 cmd/CmdDpatch.java
 resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 ```
-`MixinNCTile` adds `@Unique` fields `dp$frozenType` (computed once from `FrozenTypes`), `dp$frozen`, `dp$zoneEpoch` and implements `DpNcTile`. Freeze and scope live in `MixinWorld` because NC `update()` overrides do work after `super.update()`.
+`MixinNCTile` adds `@Unique` fields `dp$frozenType` (computed once from `FrozenTypes`), `dp$frozen`, `dp$claimEpoch` and implements `DpNcTile`. Freeze and scope live in `MixinWorld` because NC `update()` overrides do work after `super.update()`.
 
 ### 4.2 Steps
-0. Owner runs `unzip -l RLC_Nuclear*.jar`: if it already mixes into these classes, stop and evaluate. Also list mixin configs in RLMixins 1.4.6 / FermiumMixins for NC targets.
+0. P0 done (`CLAUDE.md` Setup). Resolve §4.4 ⚠ items that need jars before writing the matching mixin.
 1. Owner: NuclearCraft 2.19d + baseline (§3 step 1).
-2. Build the jar (freeze + guard + tracer + stats + `08`). Test in dev (§4.3). Hand to owner.
-3. Live, freeze on / guard off → 15 min tickmonitor + `/dpatch nc stats` + 30 min profile.
+2. Build in this order, each with its unit/dev test (§4.3): mixin plumbing + `/dpatch` stats → `08` Level Up! 2 fix → freeze + claims + `/reactor` → chunk guard → `/dpatch chunkloads`.
+3. Hand the jar to the owner. Live, freeze on / guard off → 15 min tickmonitor + `/dpatch nc stats` + 30 min profile.
 4. Live, guard on → 15 min tickmonitor; `/dpatch chunkloads 300` shows no NC frames.
 
-### 4.3 Tests
+### 4.3 Acceptance
+- 15 min `spark tickmonitor --threshold-tick 150` with 2 idle players: no 45 s spikes (step 1 baseline for comparison).
+- 30 min unfiltered profile: `TileFissionPort` < 0.5% of busy time; NC callers gone from the `loadChunk` table (guard on); `doFurnaceTicks` < 0.1%.
+- A claimed reactor forms, runs and can be unclaimed; radiation readings near ruins unchanged.
+
+### 4.4 Tests
 - Dev world with a copied ruin: `/dpatch nc stats` shows ruin ports/coolers/controllers frozen; `/forge track te` shows them gone from the tick list cost.
 - Loot a frozen ruin (open GUIs, take items, mine blocks) → nothing unfreezes (`/dpatch nc stats` unchanged).
 - Break and replace a ruin controller → chat prompt to that player only; click → claim; the reactor's ports/coolers tick; the reactor forms and runs as in vanilla NC. Restart → claim still there. Break the controller → claim removed, owner messaged.
@@ -264,5 +284,20 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 - Guard on: teleport away from a ruin, wait one autosave → its chunks unload (`/forge tps` loaded-chunk count drops). Return → readings match guard-off.
 - Reactor straddling a chunk border near a player → forms and outputs as with the guard off. Reactor straddling into an unloaded chunk (dev: force-unload) → pauses (`CASING_INCOMPLETE`), heat constant, resumes on load.
 - NuclearCraft 2.19a **and** 2.19d → all mixins apply (stats show "patched: yes").
-- Remove the jar → world loads normally; `data/dregorapatches_nc.dat` is ignored.
+- `/reactor claim` by a player who didn't place the controller → refused; op → allowed.
+- Remove the jar → world loads normally; `data/dregorapatches_reactors.dat` is ignored; keep-loaded tickets are dropped by Forge.
+- Vanilla 1.12.2 Forge client without the jar (and the Dregora client pack) connect; chat prompt is clickable; no errors client-side.
 - Live: 15 min `spark tickmonitor --threshold-tick 150`, 2 players idle → no 45 s spikes; compare with the step 1 baseline.
+
+### 4.5 ⚠ Verify before writing the matching code
+| Item | How | Blocks |
+|---|---|---|
+| `FermiumRegistryAPI.enqueueMixin(boolean, String)` in 1.4.1 | javap the jar (skinbridge already uses it) | P0 |
+| MixinExtras `@WrapOperation` available at runtime under FermiumBooter 1.4.1 | jar listing / dev boot; else fall back to `@Redirect` + conflict check | freeze, scope |
+| No other pack mixin wraps/redirects `ITickable.update()` in `World.updateEntities`, or targets `ChunkProviderServer.loadChunk/getLoadedChunk` | grep mixin configs + classes in FermiumMixins, RLMixins, EagleMixins, SRPMixins, RLTweaker, fermiumasm | freeze, guard |
+| Forge 2860 `ChunkProviderServer.loadChunk(II Runnable)` calls `fetchDormantChunk` only when `getLoadedChunk` returned null; `getLoadedChunk` writes `unloadQueued = false` | decompile the server jar | guard |
+| `RLC_Nuclear` (Dregora 1.2.0-beta-2) doesn't already patch these classes | `unzip -l`, read its mixin config | everything NC |
+| `BlockEvent.EntityPlaceEvent` exists in Forge 2860 (else `PlaceEvent`) | compile | claims |
+| NC block ids: `nuclearcraft:fission_controller_new_idle/_active/_fixed`, `fission_controller_idle/_active` | NC `NCBlocks` (2.19a) | claims |
+| Level Up! 2 1.1.23 matches the source in `08 §1.2` | javap | `08` |
+

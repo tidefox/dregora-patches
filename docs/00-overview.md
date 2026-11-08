@@ -24,6 +24,8 @@ Kept separate on purpose: Warband must stay a plain, removable mod; Patches is a
 | `03-killfeed.md` | Kill feed (weapon, assists) | Warband | P3 | no |
 | `04-friendly-fire.md` | Adaptive friendly fire | Warband | P3 | **yes** — opt-in via config, off by default |
 
+Per-mod versions, sources and the classes we touch: `reference/mods-context.md`.
+
 Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`, plus `ideas/IDEAS.md`.
 
 ## Warband rules
