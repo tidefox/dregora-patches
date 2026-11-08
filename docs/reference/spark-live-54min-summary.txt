@@ -1,0 +1,396 @@
+== metadata
+{'start': 1793918753094, 'interval_us': 4000, 'end': 1793921989198, 'ticks': 63444, 'engine': 'ASYNC'}
+duration_s=3236.1
+
+== threads
+     3233348 ms  Server thread (111144 nodes)
+
+using thread: Server thread  total=3233348 ms
+per time window (minute index: ms): [(29898645, 59904), (29898646, 59976), (29898647, 59932), (29898648, 59980), (29898649, 59980), (29898650, 59980), (29898651, 59984), (29898652, 59984), (29898653, 59980), (29898654, 59980), (29898655, 59984), (29898656, 59984), (29898657, 59980), (29898658, 59984), (29898659, 59964), (29898660, 59944), (29898661, 59980), (29898662, 59928), (29898663, 59976), (29898664, 59980), (29898665, 59944), (29898666, 59980), (29898667, 59984), (29898668, 59984), (29898669, 59920), (29898670, 59980), (29898671, 59984), (29898672, 59984), (29898673, 59984), (29898674, 59984), (29898675, 59980), (29898676, 59984), (29898677, 59980), (29898678, 59932), (29898679, 59984), (29898680, 59932), (29898681, 59972), (29898682, 59960), (29898683, 59984), (29898684, 59948), (29898685, 59984), (29898686, 59980), (29898687, 59980), (29898688, 59984), (29898689, 59984), (29898690, 59984), (29898691, 59984), (29898692, 59984), (29898693, 59980), (29898694, 59980), (29898695, 59984), (29898696, 59984), (29898697, 59984), (29898698, 54804)]
+
+== call tree (>= 0.30%, depth <= 40)
+ 98.82%  3195208ms java.lang.Thread.run
+   98.82%  3195208ms net.minecraft.server.MinecraftServer.run
+     52.25%  1689508ms net.minecraft.server.MinecraftServer.func_71217_p
+       51.62%  1668952ms net.minecraft.server.dedicated.DedicatedServer.func_71190_q
+         51.62%  1668936ms net.minecraft.server.MinecraftServer.func_71190_q
+           36.74%  1187860ms net.minecraft.world.WorldServer.func_72939_s
+             36.74%  1187816ms net.minecraft.world.World.func_72939_s
+               25.41%   821696ms net.minecraft.world.World.func_72870_g
+                 25.41%   821696ms net.minecraft.world.WorldServer.func_72866_a
+                   25.10%   811532ms net.minecraft.world.World.func_72866_a
+                      6.10%   197152ms net.minecraft.entity.monster.EntityMob.func_70071_h_
+                        6.09%   196944ms net.minecraft.entity.EntityLiving.func_70071_h_
+                          6.09%   196796ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                            2.03%    65604ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                              2.03%    65604ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                1.88%    60644ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                            1.33%    42984ms net.minecraft.entity.monster.EntityZombie.func_70636_d
+                              1.30%    42140ms net.minecraft.entity.monster.EntityMob.func_70636_d
+                                1.28%    41404ms net.minecraft.entity.EntityLiving.func_70636_d
+                                  1.22%    39408ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                    0.69%    22452ms net.minecraft.entity.EntityLiving.func_70626_be
+                                      0.47%    15220ms net.minecraft.entity.ai.EntityAITasks.func_75774_a
+                                    0.47%    15280ms net.minecraft.entity.EntityLivingBase.func_191986_a
+                                      0.39%    12612ms net.minecraft.entity.Entity.func_70091_d
+                            0.81%    26196ms net.minecraft.entity.monster.AbstractSkeleton.func_70636_d
+                              0.79%    25492ms net.minecraft.entity.monster.EntityMob.func_70636_d
+                                0.77%    24952ms net.minecraft.entity.EntityLiving.func_70636_d
+                                  0.73%    23608ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                    0.46%    14980ms net.minecraft.entity.EntityLivingBase.func_191986_a
+                                      0.39%    12692ms net.minecraft.entity.Entity.func_70091_d
+                            0.56%    18048ms net.minecraft.entity.Entity.func_70071_h_
+                              0.52%    16936ms net.minecraft.entity.EntityLiving.func_70030_z
+                                0.51%    16372ms net.minecraft.entity.EntityLivingBase.func_70030_z
+                      4.26%   137724ms net.minecraft.entity.EntityLiving.func_70071_h_
+                        4.25%   137412ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                          1.63%    52636ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                            1.63%    52636ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                              1.49%    48112ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                          1.58%    51096ms net.minecraft.entity.passive.EntityRabbit.func_70636_d
+                            1.58%    51016ms net.minecraft.entity.passive.EntityAnimal.func_70636_d
+                              1.58%    51016ms net.minecraft.entity.EntityAgeable.func_70636_d
+                                1.57%    50908ms net.minecraft.entity.EntityLiving.func_70636_d
+                                  1.56%    50480ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                    0.89%    28628ms net.minecraft.entity.EntityLivingBase.func_191986_a
+                                      0.77%    24988ms net.minecraft.entity.Entity.func_70091_d
+                                        0.53%    17224ms net.minecraft.world.World.func_184144_a
+                                    0.44%    14132ms net.minecraft.entity.EntityLiving.func_70626_be
+                          0.47%    15248ms net.minecraft.entity.Entity.func_70071_h_
+                      2.68%    86804ms com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70071_h_
+                        2.57%    83212ms net.minecraft.entity.EntityLiving.func_70071_h_
+                          2.57%    83116ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                            0.91%    29280ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                              0.91%    29280ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                0.83%    26896ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                            0.47%    15244ms com.lycanitesmobs.core.entity.AgeableCreatureEntity.func_70636_d
+                              0.46%    15020ms com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70636_d
+                                0.42%    13520ms net.minecraft.entity.EntityLiving.func_70636_d
+                                  0.41%    13364ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                            0.37%    12104ms com.lycanitesmobs.core.entity.TameableCreatureEntity.func_70636_d
+                              0.37%    11904ms com.lycanitesmobs.core.entity.AgeableCreatureEntity.func_70636_d
+                                0.36%    11756ms com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70636_d
+                                  0.33%    10704ms net.minecraft.entity.EntityLiving.func_70636_d
+                                    0.33%    10608ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                      2.40%    77472ms com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+                        2.38%    77004ms net.minecraft.entity.EntityLiving.func_70071_h_
+                          2.38%    76924ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                            1.26%    40820ms com.Fishmod.mod_LavaCow.entities.tameable.EntityRaven.func_70636_d
+                              1.25%    40264ms net.minecraft.entity.passive.EntityAnimal.func_70636_d
+                                1.25%    40260ms net.minecraft.entity.EntityAgeable.func_70636_d
+                                  1.24%    40216ms net.minecraft.entity.EntityLiving.func_70636_d
+                                    1.17%    37784ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                      0.59%    18952ms com.Fishmod.mod_LavaCow.entities.tameable.EntityRaven.func_191986_a
+                                        0.58%    18728ms net.minecraft.entity.EntityLivingBase.func_191986_a
+                                          0.50%    16040ms net.minecraft.entity.Entity.func_70091_d
+                                            0.33%    10676ms net.minecraft.world.World.func_184144_a
+                                      0.53%    17028ms net.minecraft.entity.EntityLiving.func_70626_be
+                                        0.44%    14168ms net.minecraft.entity.ai.EntityAITasks.func_75774_a
+                            0.84%    27216ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                              0.84%    27216ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                0.77%    24996ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                      2.15%    69400ms com.Fishmod.mod_LavaCow.entities.tameable.EntityMimic.func_70071_h_
+                        2.14%    69208ms com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+                          2.13%    68900ms net.minecraft.entity.EntityLiving.func_70071_h_
+                            2.13%    68888ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                              1.02%    32980ms com.Fishmod.mod_LavaCow.entities.tameable.EntityMimic.func_70636_d
+                                0.98%    31588ms net.minecraft.entity.passive.EntityAnimal.func_70636_d
+                                  0.98%    31584ms net.minecraft.entity.EntityAgeable.func_70636_d
+                                    0.98%    31552ms net.minecraft.entity.EntityLiving.func_70636_d
+                                      0.90%    29008ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                        0.79%    25412ms net.minecraft.entity.EntityLiving.func_70626_be
+                                          0.48%    15584ms net.minecraft.pathfinding.PathNavigate.func_75501_e
+                                            0.47%    15216ms net.minecraft.pathfinding.PathNavigate.func_75508_h
+                                              0.46%    14948ms net.minecraft.pathfinding.PathNavigateGround.func_75493_a
+                                                0.46%    14920ms net.minecraft.pathfinding.PathNavigateGround.func_179683_a
+                                                  0.44%    14156ms net.minecraft.pathfinding.WalkNodeProcessor.func_186319_a
+                                                    0.42%    13712ms net.minecraft.pathfinding.WalkNodeProcessor.func_193577_a
+                                                      0.42%    13700ms net.minecraft.pathfinding.WalkNodeProcessor.func_186330_a
+                              0.86%    27788ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                                0.86%    27788ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                  0.78%    25372ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                      1.25%    40576ms net.minecraft.entity.monster.EntityCreeper.func_70071_h_
+                        1.23%    39716ms net.minecraft.entity.monster.EntityMob.func_70071_h_
+                          1.23%    39716ms net.minecraft.entity.EntityLiving.func_70071_h_
+                            1.23%    39668ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                              0.55%    17868ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                                0.55%    17868ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                  0.51%    16600ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                              0.53%    17164ms net.minecraft.entity.monster.EntityMob.func_70636_d
+                                0.51%    16364ms net.minecraft.entity.EntityLiving.func_70636_d
+                                  0.50%    16112ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                                    0.30%     9704ms net.minecraft.entity.EntityLivingBase.func_191986_a
+                      1.05%    33932ms net.minecraft.entity.item.EntityBoat.func_70071_h_
+                        0.44%    14176ms net.minecraft.entity.Entity.func_70091_d
+                        0.35%    11372ms net.minecraft.entity.item.EntityBoat.func_184449_t
+                      1.03%    33444ms net.minecraft.entity.passive.EntityBat.func_70071_h_
+                        1.03%    33268ms net.minecraft.entity.EntityLiving.func_70071_h_
+                          1.03%    33268ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                            0.53%    17088ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                              0.53%    17088ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                                0.48%    15576ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                            0.34%    10980ms net.minecraft.entity.EntityLiving.func_70636_d
+                              0.33%    10788ms net.minecraft.entity.EntityLivingBase.func_70636_d
+                      0.81%    26272ms net.minecraft.entity.item.EntityItem.func_70071_h_
+                        0.30%     9708ms net.minecraft.entity.Entity.func_70091_d
+                      0.54%    17520ms net.minecraft.entity.monster.EntitySpider.func_70071_h_
+                        0.54%    17412ms net.minecraft.entity.monster.EntityMob.func_70071_h_
+                          0.54%    17412ms net.minecraft.entity.EntityLiving.func_70071_h_
+                            0.54%    17396ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                      0.36%    11800ms com.teamwizardry.librarianlib.asm.LibLibAsmHooks.preUpdate
+                        0.36%    11800ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                      0.32%    10372ms net.minecraft.entity.monster.EntityZombieVillager.func_70071_h_
+                        0.32%    10280ms net.minecraft.entity.monster.EntityMob.func_70071_h_
+                          0.32%    10280ms net.minecraft.entity.EntityLiving.func_70071_h_
+                            0.32%    10280ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                6.74%   217956ms nc.tile.dummy.TileFissionPort.func_73660_a
+                  3.40%   109904ms nc.tile.dummy.TileDummy.func_73660_a
+                    3.40%   109904ms nc.tile.NCTile.func_73660_a
+                      3.40%   109900ms nc.tile.dummy.TileFissionPort.onAdded
+                        3.40%   109900ms nc.tile.dummy.TileFissionPort.findController
+                          3.31%   106888ms net.minecraft.world.World.func_175625_s
+                            3.16%   102128ms net.minecraft.world.World.func_189508_F
+                              0.57%    18516ms net.minecraft.util.math.Vec3i.equals
+                  3.33%   107588ms nc.tile.dummy.TileFissionPort.pushEnergy
+                    2.90%    93808ms nc.tile.dummy.TileFissionPort.pushPortEnergyToSide
+                      1.18%    38304ms nc.tile.dummy.TileDummy.getEnergyStorage
+                        1.18%    38304ms nc.tile.dummy.TileDummy.getMaster
+                          0.61%    19616ms nc.tile.dummy.TileDummy.hasMaster
+                            0.59%    19148ms nc.tile.dummy.TileDummy.isMaster
+                              0.57%    18528ms net.minecraft.world.World.func_175625_s
+                          0.58%    18688ms net.minecraft.world.World.func_175625_s
+                      0.85%    27412ms nc.tile.dummy.TileDummy.getEnergyConnection
+                        0.85%    27324ms nc.tile.dummy.TileDummy.getMaster
+                          0.44%    14324ms nc.tile.dummy.TileDummy.hasMaster
+                            0.43%    14020ms nc.tile.dummy.TileDummy.isMaster
+                              0.42%    13600ms net.minecraft.world.World.func_175625_s
+                          0.40%    13000ms net.minecraft.world.World.func_175625_s
+                      0.54%    17588ms net.minecraft.world.World.func_175625_s
+                1.05%    33880ms net.minecraft.world.chunk.Chunk.func_177426_a
+                  1.05%    33816ms nc.tile.radiation.TileRadiationScrubber.func_145843_s
+                    1.05%    33816ms nc.radiation.environment.RadiationEnvironmentHandler.removeTile
+                      0.42%    13560ms java.util.concurrent.ConcurrentHashMap.remove
+                        0.36%    11744ms java.util.concurrent.ConcurrentHashMap.replaceNode
+                      0.37%    11856ms java.util.concurrent.ConcurrentHashMap$EntryIterator.next
+                        0.36%    11668ms java.util.concurrent.ConcurrentHashMap$EntryIterator.next
+                0.62%    19932ms java.util.ArrayList.contains
+                  0.62%    19932ms java.util.ArrayList.indexOf
+            5.94%   191996ms net.minecraft.world.WorldServer.func_72835_b
+              4.04%   130708ms net.minecraft.world.WorldEntitySpawner.func_77192_a
+                0.62%    20144ms net.minecraft.world.World.countEntities
+                  0.60%    19372ms net.minecraft.world.World.wrapOperation$zgc000$srpmixins_parasitesDontCountToHostileCap
+                    0.59%    19156ms net.minecraft.world.World$$Lambda$2606.1122110234.call
+                      0.59%    19156ms net.minecraft.world.World.mixinextras$bridge$isCreatureType$251
+                0.54%    17384ms net.minecraft.world.biome.Biome$SpawnListEntry.newInstance
+                  0.54%    17340ms net.minecraftforge.fml.common.registry.EntityEntry.newInstance
+                    0.31%    10096ms mirror.normalasm.NormalReflector$$Lambda$733.247359835.apply
+                      0.31%    10064ms net.minecraft.entity.passive.EntitySquid.<init>
+                        0.31%    10032ms net.minecraft.entity.passive.EntityWaterMob.<init>
+                          0.31%    10028ms net.minecraft.entity.EntityLiving.<init>
+                            0.30%     9728ms net.minecraft.entity.EntityLivingBase.<init>
+                0.44%    14340ms net.minecraft.world.WorldServer.func_175734_a
+                0.37%    11936ms net.minecraft.world.WorldServer.func_72838_d
+                  0.37%    11856ms net.minecraft.world.World.func_72838_d
+                0.35%    11192ms net.minecraft.world.WorldEntitySpawner.wrapOperation$zio000$fermiummixins_vanillaWorldEntitySpawner_findChunksForSpawning$mixinextras$bridge$12
+                  0.35%    11192ms net.minecraft.world.WorldEntitySpawner.wrapOperation$zio000$fermiummixins_vanillaWorldEntitySpawner_findChunksForSpawning
+                0.30%     9716ms net.minecraft.world.WorldEntitySpawner.localvar$zgb000$srpmixins_setParasiteMobCapPerPlayer
+                  0.30%     9716ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+              1.49%    48204ms net.minecraft.world.WorldServer.func_147456_g
+                0.42%    13700ms net.minecraft.world.chunk.storage.ExtendedBlockStorage.func_177485_a
+                  0.42%    13452ms net.minecraft.world.chunk.BlockStateContainer.func_186016_a
+                    0.42%    13452ms net.minecraft.world.chunk.BlockStateContainer.func_186015_a
+                      0.42%    13452ms net.minecraft.util.BitArray.func_188142_a
+            5.65%   182816ms net.minecraftforge.fml.common.FMLCommonHandler.onPreWorldTick
+              5.65%   182816ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                5.65%   182556ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                  4.48%   144788ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler_1855_FurnaceEfficiencyBonus_doFurnaceTicks_WorldTickEvent.invoke
+                    4.48%   144772ms levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks
+                      4.47%   144564ms java.util.stream.ReferencePipeline.collect
+                        4.47%   144552ms java.util.stream.AbstractPipeline.evaluate
+                          4.47%   144496ms java.util.stream.ReduceOps$ReduceOp.evaluateSequential
+                            4.47%   144392ms java.util.stream.AbstractPipeline.wrapAndCopyInto
+                              4.46%   144332ms java.util.stream.AbstractPipeline.copyInto
+                                4.45%   143984ms java.util.ArrayList$ArrayListSpliterator.forEachRemaining
+                                  4.28%   138400ms java.util.stream.ReferencePipeline$2$1.accept
+                                    4.08%   131776ms levelup2.skills.crafting.FurnaceEfficiencyBonus$$Lambda$2453.982261441.test
+                                      4.01%   129700ms levelup2.skills.crafting.FurnaceEfficiencyBonus.lambda$doFurnaceTicks$0
+                                        0.82%    26464ms net.minecraft.tileentity.TileEntity.hasCapability
+                                          0.77%    24744ms net.minecraftforge.common.capabilities.CapabilityDispatcher.hasCapability
+                                        0.74%    23908ms com.teamwizardry.librarianlib.features.base.block.tile.TileMod.hasCapability
+                                          0.70%    22620ms com.teamwizardry.librarianlib.features.saving.AbstractSaveHandler.hasCapability
+                                            0.66%    21368ms com.teamwizardry.librarianlib.features.saving.FieldCache.hasCapability
+                                              0.54%    17352ms java.lang.String.intern
+                                                0.51%    16588ms libjvm.so.JVM_InternString
+                                                  0.46%    14972ms libjvm.so.StringTable::intern
+                                        0.40%    12820ms slimeknights.mantle.tileentity.TileInventory.hasCapability
+                                          0.36%    11500ms net.minecraft.tileentity.TileEntity.hasCapability
+                                            0.36%    11500ms net.minecraftforge.common.capabilities.CapabilityDispatcher.hasCapability
+                                        0.34%    11040ms net.blay09.mods.cookingforblockheads.tile.TileCounter.hasCapability
+                                          0.31%    10152ms net.minecraft.tileentity.TileEntity.hasCapability
+                                            0.31%    10152ms net.minecraftforge.common.capabilities.CapabilityDispatcher.hasCapability
+                  0.53%    17260ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler_1457_WorldMobCapHandler_onWorldServerTick_WorldTickEvent.invoke
+                    0.53%    17256ms srpmixins.handlers.WorldMobCapHandler.onWorldServerTick
+                      0.53%    17068ms net.minecraft.world.World.func_72907_a
+                  0.50%    16108ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler_1864_RadiationHandler_updateWorldRadiation_WorldTickEvent.invoke
+                    0.50%    16092ms nc.radiation.RadiationHandler.updateWorldRadiation
+            1.62%    52420ms net.minecraft.network.NetworkSystem.func_151269_c
+              1.62%    52324ms net.minecraft.network.NetworkManager.func_74428_b
+                1.60%    51652ms net.minecraftforge.fml.common.network.handshake.NetworkDispatcher$1.func_73660_a
+                  1.60%    51616ms net.minecraft.network.NetHandlerPlayServer.func_73660_a
+                    1.59%    51440ms net.minecraft.entity.player.EntityPlayerMP.func_71127_g
+                      1.57%    50756ms net.minecraft.entity.player.EntityPlayer.func_70071_h_
+                        0.55%    17812ms net.minecraftforge.fml.common.FMLCommonHandler.onPlayerPreTick
+                          0.55%    17812ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                            0.54%    17508ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                        0.55%    17696ms net.minecraft.entity.EntityLivingBase.func_70071_h_
+                          0.33%    10624ms net.minecraftforge.common.ForgeHooks.onLivingUpdate
+                            0.33%    10624ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                              0.32%    10392ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                        0.45%    14640ms net.minecraft.entity.player.EntityPlayer.func_184808_cD
+                          0.45%    14624ms net.minecraftforge.fml.common.FMLCommonHandler.onPlayerPostTick
+                            0.45%    14624ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                              0.44%    14368ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+            0.79%    25396ms net.minecraft.entity.EntityTracker.func_72788_a
+              0.63%    20500ms net.minecraft.entity.EntityTrackerEntry.func_73122_a
+            0.68%    21836ms net.minecraftforge.fml.common.FMLCommonHandler.onPostWorldTick
+              0.68%    21836ms net.minecraftforge.fml.common.eventhandler.EventBus.post
+                0.67%    21576ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler.invoke
+                  0.33%    10600ms net.minecraftforge.fml.common.eventhandler.ASMEventHandler_945_SpawnerEventListener_onWorldUpdate_WorldTickEvent.invoke
+                    0.33%    10584ms com.lycanitesmobs.core.spawner.SpawnerEventListener.onWorldUpdate
+                      0.32%    10236ms com.lycanitesmobs.core.spawner.trigger.WorldSpawnTrigger.onTick
+                        0.32%    10236ms com.lycanitesmobs.core.spawner.trigger.SpawnTrigger.trigger
+                          0.32%    10236ms com.lycanitesmobs.core.spawner.Spawner.trigger
+                            0.32%    10236ms com.lycanitesmobs.core.spawner.Spawner.doSpawn
+                              0.31%    10104ms com.lycanitesmobs.core.spawner.Spawner.getSpawnPos
+                                0.31%    10064ms com.lycanitesmobs.core.spawner.location.BlockSpawnLocation.getSpawnPositions
+        0.46%    14836ms net.minecraft.server.MinecraftServer.func_71267_a
+          0.46%    14836ms net.minecraft.world.WorldServer.func_73044_a
+            0.37%    12096ms net.minecraft.world.gen.ChunkProviderServer.func_186027_a
+              0.37%    12084ms net.minecraft.world.gen.ChunkProviderServer.func_73242_b
+                0.37%    12084ms net.minecraft.world.chunk.storage.AnvilChunkLoader.func_75816_a
+                  0.36%    11764ms net.minecraft.world.chunk.storage.AnvilChunkLoader.func_75820_a
+     46.57%  1505644ms java.lang.Thread.sleep
+       46.57%  1505636ms libjvm.so.JVM_Sleep
+         46.56%  1505608ms libjvm.so.os::sleep
+           46.56%  1505580ms libjvm.so.os::PlatformEvent::park
+             46.56%  1505548ms libc.so.6.pthread_cond_timedwait
+               46.56%  1505544ms native./usr/lib/x86_64-linux-gnu/libc.so.6
+                 46.56%  1505536ms native./usr/lib/x86_64-linux-gnu/libc.so.6
+  1.11%    35888ms native.unknown_Java
+    0.48%    15572ms com.charles445.rltweaker.hook.HookWorld.getCollisionBoxes
+
+== World.updateEntities children (tile entities etc.)
+ 25.41%   821696ms net.minecraft.world.World.func_72870_g
+  6.74%   217956ms nc.tile.dummy.TileFissionPort.func_73660_a
+  1.05%    33880ms net.minecraft.world.chunk.Chunk.func_177426_a
+  0.62%    19932ms java.util.ArrayList.contains
+  0.21%     6812ms net.minecraft.tileentity.TileEntityHopper.func_73660_a
+  0.20%     6608ms nc.tile.energyFluid.TileBuffer.func_73660_a
+  0.16%     5308ms net.blay09.mods.cookingforblockheads.tile.TileCounter.func_73660_a
+  0.16%     5120ms net.minecraft.world.WorldServer.func_184147_l
+  0.13%     4132ms nc.tile.generator.TilePassiveGenerator.func_73660_a
+  0.12%     3940ms nc.tile.radiation.TileRadiationScrubber.func_73660_a
+  0.12%     3916ms nc.tile.fluid.TileActiveCooler.func_73660_a
+  0.10%     3380ms net.blay09.mods.cookingforblockheads.tile.TileOven.func_73660_a
+  0.09%     3020ms native.itable stub
+  0.08%     2496ms java.util.ArrayList.removeAll
+  0.05%     1500ms nc.tile.passive.TilePassiveAbstract.func_73660_a
+  0.04%     1292ms net.minecraft.tileentity.TileEntityMobSpawner.func_73660_a
+  0.04%     1280ms nc.tile.energy.battery.TileBattery.func_73660_a
+  0.03%     1080ms nc.tile.radiation.TileGeigerCounter.func_73660_a
+  0.03%     1072ms nc.tile.generator.TileItemGenerator.func_73660_a
+  0.02%      752ms net.blay09.mods.cookingforblockheads.tile.TileFridge.func_73660_a
+  0.02%      728ms net.minecraft.world.WorldServer.func_72847_b
+  0.02%      664ms nc.tile.processor.TileItemProcessor.func_73660_a
+  0.02%      620ms ejektaflex.bountiful.block.TileEntityBountyBoard.func_73660_a
+  0.02%      600ms nc.tile.processor.TileItemFluidProcessor.func_73660_a
+  0.02%      508ms nc.tile.processor.TileFluidProcessor.func_73660_a
+  0.02%      492ms net.minecraft.world.chunk.Chunk.func_76622_b
+  0.01%      384ms rustic.common.tileentity.TileEntityCondenserBase.func_73660_a
+  0.01%      360ms net.minecraft.tileentity.TileEntityChest.func_73660_a
+  0.01%      212ms net.minecraft.tileentity.TileEntityFurnace.func_73660_a
+  0.01%      212ms net.minecraft.world.World.func_175668_a
+  0.01%      180ms net.minecraft.tileentity.TileEntityBrewingStand.func_73660_a
+  0.01%      180ms net.minecraft.world.WorldServer.func_175680_a
+  0.01%      168ms vazkii.quark.world.tile.TileMonsterBox.func_73660_a
+  0.00%      160ms rustic.common.tileentity.TileEntityCabinet.func_73660_a
+  0.00%      120ms rustic.common.tileentity.TileEntityBrewingBarrel.func_73660_a
+  0.00%       92ms net.minecraft.world.World.func_184138_a
+  0.00%       76ms net.minecraft.tileentity.TileEntityDaylightDetector.func_73660_a
+  0.00%       68ms java.util.ArrayList.remove
+  0.00%       48ms net.minecraft.tileentity.TileEntityEnchantmentTable.func_73660_a
+  0.00%       48ms net.blay09.mods.cookingforblockheads.tile.TileToaster.func_73660_a
+
+== ChunkProviderServer.loadChunk callers (total / of which disk read)
+   10388ms      636ms  (vanilla) net.minecraft.world.gen.ChunkProviderServer.func_186028_c <- net.minecraft.world.gen.ChunkProviderServer.func_186025_d <- net.minecraft.world.World.func_72964_e <- net.minecraft.world.World.func_175726_f
+    6792ms     2444ms  nc.tile.dummy.TileDummy.isMaster <- nc.tile.dummy.TileDummy.hasMaster <- nc.tile.dummy.TileDummy.getMaster
+    2720ms     1524ms  nc.tile.dummy.TileFissionPort.pushPortEnergyToSide <- nc.tile.dummy.TileFissionPort.pushEnergy <- nc.tile.dummy.TileFissionPort.func_73660_a
+    2136ms        0ms  (vanilla) net.minecraft.world.gen.ChunkProviderServer.func_186028_c <- net.minecraft.world.gen.ChunkProviderServer.func_186025_d <- net.minecraft.world.World.func_72964_e <- net.minecraft.world.WorldEntitySpawner.func_180621_a
+    2084ms        0ms  nc.tile.dummy.TileDummy.getMaster <- nc.tile.dummy.TileDummy.getEnergyStorage <- nc.tile.dummy.TileFissionPort.pushPortEnergyToSide
+    1988ms     1864ms  nc.tile.radiation.TileRadiationScrubber.isOcclusive <- nc.tile.radiation.TileRadiationScrubber.checkRadiationEnvironmentInfo <- nc.tile.radiation.TileRadiationScrubber.func_73660_a
+    1628ms        0ms  nc.tile.dummy.TileDummy.getMaster <- nc.tile.dummy.TileDummy.getEnergyConnection <- nc.tile.dummy.TileFissionPort.pushPortEnergyToSide
+    1428ms     1236ms  nc.tile.energyFluid.TileBuffer.pushStacksToSide <- nc.tile.inventory.ITileInventory.pushStacks <- nc.tile.energyFluid.TileBuffer.func_73660_a
+    1108ms        0ms  com.Fishmod.mod_LavaCow.entities.tameable.EntityMimic.func_70636_d <- com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_ <- com.Fishmod.mod_LavaCow.entities.tameable.EntityMimic.func_70071_h_
+     984ms        0ms  com.lycanitesmobs.core.entity.ExtendedEntity.onUpdate <- com.lycanitesmobs.GameEventListener.onEntityUpdate
+     828ms        0ms  com.lycanitesmobs.core.spawner.location.BlockSpawnLocation.isValidBlock <- com.lycanitesmobs.core.spawner.location.BlockSpawnLocation.getSpawnPositions <- com.lycanitesmobs.core.spawner.Spawner.getSpawnPos
+     728ms        0ms  com.lycanitesmobs.core.spawner.location.BlockSpawnLocation.getSpawnPositions <- com.lycanitesmobs.core.spawner.Spawner.getSpawnPos <- com.lycanitesmobs.core.spawner.Spawner.doSpawn
+     528ms      268ms  nc.tile.energy.ITileEnergy.pushEnergyToSide <- nc.tile.energy.ITileEnergy.pushEnergy <- nc.tile.generator.TilePassiveGenerator.func_73660_a
+     520ms        0ms  (vanilla) net.minecraft.world.gen.ChunkProviderServer.func_186028_c <- net.minecraft.world.gen.ChunkProviderServer.func_186025_d <- net.minecraft.world.World.func_72964_e <- net.minecraft.world.World.func_175647_a
+     516ms        0ms  com.github.alexthe666.iceandfire.entity.EntityTroll.func_70636_d
+     400ms        0ms  com.Fishmod.mod_LavaCow.entities.ai.EntityAITargetItem.func_75250_a <- com.Fishmod.mod_LavaCow.entities.tameable.EntityRaven.func_70636_d <- com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+     356ms        0ms  nc.tile.dummy.TileDummy.getMaster <- nc.tile.dummy.TileDummy.getEnergyStorage <- nc.tile.dummy.TileFissionPort.pushEnergy
+     328ms        0ms  com.charles445.aireducer.util.WorldRadiusUtil.getEntitiesWithinAABB <- com.charles445.aireducer.ai.AIAvoidReduced.func_75250_a
+     308ms        0ms  com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70071_h_
+     296ms        0ms  com.charles445.rltweaker.hook.HookWorld.getCollisionBoxes
+     284ms        0ms  com.github.alexthe666.iceandfire.entity.ai.DragonAITarget.func_75250_a <- com.github.alexthe666.iceandfire.entity.EntityDragonBase.func_70636_d <- com.github.alexthe666.iceandfire.entity.EntityLightningDragon.func_70636_d
+     252ms        0ms  com.lycanitesmobs.core.entity.ExtendedEntity.onUpdate <- com.lycanitesmobs.GameEventListener.onEntityUpdate <- com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+     248ms        0ms  srpmixins.handlers.SpawnPotentialsHandler.onSpawnPotentials
+     228ms        0ms  com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_ <- com.Fishmod.mod_LavaCow.entities.tameable.EntityMimic.func_70071_h_
+     220ms        0ms  com.Fishmod.mod_LavaCow.entities.tameable.EntityRaven.func_191986_a <- com.Fishmod.mod_LavaCow.entities.tameable.EntityRaven.func_70636_d <- com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+     208ms        0ms  nc.tile.dummy.TileFissionPort.findController <- nc.tile.dummy.TileFissionPort.onAdded <- nc.tile.NCTile.func_73660_a
+     184ms        8ms  com.github.alexthe666.iceandfire.entity.util.EntityDreadMob.func_70636_d <- com.github.alexthe666.iceandfire.entity.EntityDreadBeast.func_70636_d
+     184ms        0ms  com.lycanitesmobs.core.entity.ExtendedEntity.onUpdate <- com.lycanitesmobs.GameEventListener.onEntityUpdate <- com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70071_h_
+     172ms        0ms  com.Fishmod.mod_LavaCow.entities.tameable.EntityFishTameable.func_70071_h_
+     168ms        0ms  com.github.alexthe666.iceandfire.entity.EntityDragonBase.func_191986_a <- com.github.alexthe666.iceandfire.entity.EntityDragonBase.func_70636_d <- com.github.alexthe666.iceandfire.entity.EntityLightningDragon.func_70636_d
+     164ms        0ms  nc.tile.dummy.TileDummy.getMaster <- nc.tile.dummy.TileFissionPort.pushEnergy <- nc.tile.dummy.TileFissionPort.func_73660_a
+     140ms        0ms  net.ilexiconn.llibrary.server.entity.multipart.PartEntity.func_70071_h_ <- com.github.alexthe666.iceandfire.entity.util.EntityMultipartPart.func_70071_h_ <- com.github.alexthe666.iceandfire.entity.EntityDragonBase.updateParts
+     120ms      120ms  net.blay09.mods.waystones.WaystoneManager.getWaystoneInWorld <- net.blay09.mods.waystones.network.handler.HandlerTeleportToWaystone.lambda$onMessage$0 <- net.blay09.mods.waystones.network.handler.HandlerTeleportToWaystone$$Lambda$2777.2029252950.run
+     116ms        0ms  nc.tile.dummy.TileDummy.getMaster <- nc.tile.dummy.TileFissionPort.getCurrentEnergyStored <- nc.tile.dummy.TileFissionPort.pushPortEnergyToSide
+     116ms        0ms  com.github.alexthe666.iceandfire.entity.util.EntityDreadMob.func_70636_d <- com.github.alexthe666.iceandfire.entity.EntityDreadThrall.func_70636_d
+     116ms      116ms  nc.radiation.RadiationHelper.getTileInventory <- nc.radiation.RadiationHelper.transferRadiationFromProviderToChunkBuffer <- nc.radiation.RadiationHandler.updateWorldRadiation
+     108ms        0ms  com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70091_d <- com.lycanitesmobs.core.entity.BaseCreatureEntity.func_191986_a <- com.lycanitesmobs.core.entity.BaseCreatureEntity.func_70636_d
+     104ms        0ms  nc.tile.dummy.TileDummy.isMaster <- nc.tile.dummy.TileDummy.hasMaster <- nc.tile.dummy.TileFissionPort.getNumberOfPorts
+     104ms        0ms  com.Fishmod.mod_LavaCow.entities.EntityZombieFrozen.func_70636_d
+     104ms        0ms  rustic.common.tileentity.TileEntityCondenser.hasCapability <- levelup2.skills.crafting.FurnaceEfficiencyBonus.lambda$doFurnaceTicks$0 <- levelup2.skills.crafting.FurnaceEfficiencyBonus$$Lambda$2453.982261441.test
+
+== time by package of innermost non-vanilla frame (self time)
+ 46.81%  1513652ms libc.so
+ 16.37%   529460ms (vanilla/jdk)
+  7.52%   243032ms nc.tile
+  3.56%   114968ms com.charles445
+  3.26%   105248ms com.lycanitesmobs
+  3.09%   100012ms com.Fishmod
+  2.32%    74976ms levelup2.skills
+  2.02%    65316ms com.github
+  1.35%    43804ms nc.radiation
+  1.15%    37268ms mirror.normalasm
+  0.85%    27416ms net.blay09
+  0.80%    25984ms srpmixins.handlers
+  0.76%    24440ms libjvm.so
+  0.61%    19700ms com.teamwizardry
+  0.45%    14660ms pl.asie
+  0.45%    14464ms xzeroair.trinkets
+  0.39%    12660ms vazkii.quark
+  0.37%    11892ms slimeknights.mantle
+  0.37%    11828ms com.tmtravlr
+  0.36%    11556ms com.mujmajnkraft
+  0.32%    10492ms ichttt.mods
+  0.30%     9824ms net.silentchaos512
+  0.29%     9516ms ivorius.reccomplex
+  0.29%     9304ms com.fantasticsource
+  0.28%     8896ms nc.capability
+  0.24%     7608ms org.orecruncher
+  0.20%     6500ms c4.champions
+  0.20%     6452ms eaglemixins.handlers
+  0.19%     6036ms com.creativemd
+  0.18%     5976ms com.pg85
