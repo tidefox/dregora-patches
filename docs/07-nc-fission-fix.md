@@ -4,7 +4,7 @@ Status: **P1 code done** (2026-11-08): freeze + claims, chunk guard, `/reactor`,
 
 Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reactor ruins, and the steady NC cost they add every tick. The one gameplay change: a fission reactor runs only after a player claims it (§2.1).
 
-Lives in **Dregora Patches** (`dregorapatches`), not Warband: it reads and patches NuclearCraft classes (plus three small vanilla hooks).
+Lives in **Dregora Patches** (`dregorapatches`) as a patch module: it reads and patches NuclearCraft classes (plus three small vanilla hooks).
 
 Approach: **freeze** reactor parts unless a player has **claimed** the reactor (no player reactors exist yet), and **guard** NC so it never loads a chunk.
 
