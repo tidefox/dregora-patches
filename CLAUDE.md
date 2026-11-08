@@ -23,7 +23,7 @@ docs/03-killfeed.md          Warband P3
 docs/04-friendly-fire.md     Warband P3
 docs/ideas/                  parked — do not build unless asked
 docs/reference/handoff-nc-fission-lag.md   original lag investigation (server paths, spark/rcon commands)
-docs/reference/pack-mods.txt               exact mod jars on the server
+docs/reference/pack-mods.txt               exact mod jars on the server (pack-mods-client.txt: client)
 docs/reference/mods-context.md             every mod the plan touches: versions, sources, classes, risks
 docs/reference/spark-*-summary.txt         profile summaries (tools/spark_summary.py)
 tools/spark_summary.py                     dependency-free .sparkprofile → text summary
@@ -56,7 +56,7 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 **P0 status: done.** Notes from doing it:
 - Gradle runs on **Java 25** (RFG 2.0.3 plugin classes are Java 25 bytecode); compile/test use the Java 8 toolchain (foojay provisions it). Locally: `JAVA_HOME=<jdk25> ./gradlew build`.
 - `./gradlew runServer` runs in `<folder>/run/` (accept the EULA once: `echo eula=true > run/eula.txt`). In `dregorapatches/` it copies FermiumBooter into `run/mods` and loads the coremod via `-Dfml.coreMods.load`.
-- NuclearCraft compiles against 2.19d (`curse.maven:nuclearcraft-226254:9469401`, deobfuscated by RFG). Level Up! 2's CurseForge id wasn't reachable from the sandbox: drop `Level Up- 2-1.1.23-1.12.jar` into `dregorapatches/libs/` (git-ignored) or set `levelup2_project_id`/`levelup2_file_id` in `gradle.properties` before writing the `08` mixin.
+- NuclearCraft compiles against 2.19d (`curse.maven:nuclearcraft-226254:9469401`, deobfuscated by RFG). Level Up! 2's CurseForge id wasn't reachable from the sandbox: drop the Level Up! 2 1.1.23 jar (server: `Level Up! 2-1.1.23-1.12.jar`) into `dregorapatches/libs/` (git-ignored) or set `levelup2_project_id`/`levelup2_file_id` in `gradle.properties` before writing the `08` mixin.
 - FermiumBooter's classes are never visible in our coremod constructor; the early config is registered from `injectData` (see `docs/reference/mods-context.md` → FermiumBooter). `ci/smoke.sh` boots with both jar orders to keep that covered.
 - The vanilla refmap is only generated once the early config lists a mixin; CI checks for it from then on.
 - MixinExtras 0.5.0 ships inside FermiumBooter 1.4.1 (runtime). Add it compile-only when writing the first `@WrapOperation`.
@@ -69,7 +69,7 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 | P2 | `warband`: core (`ProjectileOrigin`, `/wb debug damage`, `/wb debug kill`, config) → `05` recap → `06` trick shots | tests listed in each doc |
 | P3 | `warband`: `03` kill feed, then `04` friendly fire | tests listed in each doc |
 
-Before P1 code: ask the user to run `unzip -l RLC_Nuclear*.jar` (Dregora 1.2.0-beta-2 adds it) — if it already mixes into `TileFissionPort`, stop and reassess.
+RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-beta-2 only; re-check if the server moves to 1.2.x). Keep Chunk Pregenerator idle during P1 measurements.
 
 ## Facts already verified (don't re-research)
 - Owner: no player-built fission reactors exist; no chunk loaders in the pack; NC is only used as far as progression needs.

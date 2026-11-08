@@ -18,7 +18,7 @@ Lives in **Dregora Patches** (`dregorapatches`, late mixin config `mixins.dregor
   - Mantle `TileInventory`, Cooking for Blockheads `TileCounter`, …
 - The cost scales with the number of loaded tile entities (NC ruins that keep themselves loaded add to it; see `07`).
 
-### 1.2 Source (pack jar `Level Up- 2-1.1.23-1.12.jar`; source read from BeetoGuy/LevelUp2 `master`, which matches the profile's class and lambda names; the `1.12-rewrite` branch moved this code to `CraftingSkillHandler` and is not what the pack runs)
+### 1.2 Source (pack jar: server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar`; source read from BeetoGuy/LevelUp2 `master`, which matches the profile's class and lambda names; the `1.12-rewrite` branch moved this code to `CraftingSkillHandler` and is not what the pack runs)
 ```java
 @SubscribeEvent
 public void doFurnaceTicks(TickEvent.WorldTickEvent evt) {

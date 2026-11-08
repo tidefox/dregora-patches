@@ -1,6 +1,6 @@
 # Mods context — everything the Dregora Patches plan touches or depends on
 
-One entry per mod that came up in the NuclearCraft / Level Up! 2 investigation (`07`, `08`). Versions are from `pack-mods.txt` (server `mods/`) unless noted. "Patched" = we ship a mixin into it.
+One entry per mod that came up in the NuclearCraft / Level Up! 2 investigation (`07`, `08`). Versions are from `pack-mods.txt` (server `mods/`; client list in `pack-mods-client.txt`) unless noted. "Patched" = we ship a mixin into it.
 
 Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java 8 · host `kyuubi`, rootless podman container `minecraft`.
 
@@ -17,7 +17,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 | MixinBooter | 11.18 | annotations + annotation processor at compile time only | no (build only) |
 | MixinExtras | 0.5.0, bundled in FermiumBooter 1.4.1 | `@WrapOperation` for the tick wrapper | no (dependency) |
 | FermiumMixins / RLMixins / EagleMixins / SRPMixins | 1.0.10 / 1.4.6 / 1.2.4 / 2.9.2.2 | other mixin mods: conflict check | no |
-| RLC_Nuclear | 1.0.1 (Dregora 1.2.0-beta-2, not on server) | may already patch NC | no (check) |
+| RLC_Nuclear | 1.0.1 (Dregora 1.2.0-beta-2 only) | not installed on server or client (checked 2026-11-08) | no |
 | OpenTerrainGenerator | v9.7 | generates the NC ruins | no |
 | LibrarianLib | 4.22 | makes the Level Up! 2 scan expensive | no |
 | spark | 1.11.140 (`spark-unforged`) | profiling / measurement | no |
@@ -50,7 +50,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 - **Upstream:** maintainer is active; an issue/PR with both profile summaries is worth filing.
 
 ## Level Up! 2 — **patched** (`08`)
-- **Jar:** `Level Up- 2-1.1.23-1.12.jar`.
+- **Jar:** server `Level Up! 2-1.1.23-1.12.jar`, client `Level Up- 2-1.1.23-1.12.jar` (same version, different file names).
 - **Source:** `github.com/BeetoGuy/LevelUp2`. Branch `master` has `levelup2.skills.crafting.FurnaceEfficiencyBonus.doFurnaceTicks` with the stream/lambda that matches the profile frames (`lambda$doFurnaceTicks$0`). Branch `1.12-rewrite` (modVersion 1.5.8, 2020) moved this into `CraftingSkillHandler`, so it is **not** the pack's code. ⚠ confirm against the 1.1.23 jar.
 - **Problem:** every world tick it streams all of `world.loadedTileEntityList` and calls `hasCapability(MACHINE_PROCESSING, UP)` on each: 145 s / 54 min (≈ 2.3 ms/tick).
 - **Capability holders:** `TileEntityFurnace` and `TileEntityBrewingStand` (and subclasses), attached via `AttachCapabilitiesEvent`. `levelup2.api.IProcessor` is public API; no other pack mod is known to implement it (⚠ grep jars).
@@ -65,7 +65,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 - ⚠ decompile Forge 2860 `ChunkProviderServer` before writing the guard.
 
 ## FermiumBooter — runtime mixin loader (dependency)
-- **Jar:** `FermiumBooter-1.4.1.jar`; CurseForge project **968474**, file **7279112** (used by `tidefox/skinbridge` via CurseMaven `curse.maven:fermiumbooter-968474:7279112`).
+- **Jar:** `` `FermiumBooter-1.4.1.jar`` (backtick prefix, both sides, to sort first; irrelevant to us, see load order below); CurseForge project **968474**, file **7279112** (used by `tidefox/skinbridge` via CurseMaven `curse.maven:fermiumbooter-968474:7279112`).
 - API: `fermiumbooter.FermiumRegistryAPI.enqueueMixin(boolean late, String config)`, called from our `IFMLLoadingPlugin` (constructor, retry in `injectData`). Early = vanilla targets, late = mod targets.
 - **Load order (verified in P0 smoke test, Forge 2860):** FermiumBooter's classes are *not* visible when our coremod constructor runs, whatever the jar names; we only see them in `injectData`, and by then FermiumBooter's own `injectData` has already flushed its early list with `Mixins.addConfiguration`. So `DregoraPatchesPlugin` registers the early config with `Mixins.addConfiguration` itself in that case (Mixin dedups configs by name). Late configs are still read from FermiumBooter's queue. Side effect: FermiumBooter's own config can't disable our early config; use `nc.*` switches in `dregorapatches.cfg` instead.
 - Provides Mixin at runtime; we must not require MixinBooter.
@@ -81,9 +81,10 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 - `FermiumMixins-1.0.10`, `RLMixins-1.4.6`, `EagleMixins-1.2.4`, `SRPMixins-2.9.2.2`, `fermiumasm-5.28` (probably the source of the `mirror.normalasm.*` frames in the profile, a NormalASM fork ⚠).
 - Before coding: grep their mixin configs for `World.updateEntities`, `ChunkProviderServer`, and any `nc.*` or `levelup2.*` target. SRPMixins wraps `World.countEntities` and the entity spawner (seen in profile), which we don't touch.
 
-## RLC_Nuclear — check before P1 code
-- `RLC_Nuclear` v1.0.1, CurseForge project **1293578**. Added in Dregora **1.2.0-beta-2**; not on the server. Purpose unknown.
-- `unzip -l RLC_Nuclear*.jar` and read its mixin config: if it targets `TileFissionPort` / `TileFissionController` / the TE tick loop, stop and reassess.
+## RLC_Nuclear — not installed (checked)
+- `RLC_Nuclear` v1.0.1, CurseForge project **1293578**. Added in Dregora **1.2.0-beta-2**. Purpose unknown.
+- **Checked 2026-11-08:** neither the server's nor the client's `mods/` (`pack-mods.txt`, `pack-mods-client.txt`) contains an `RLC_Nuclear*.jar` → nothing else patches NC fission classes; P1 proceeds as planned.
+- Re-check only if the server moves to Dregora 1.2.x: `unzip -l RLC_Nuclear*.jar` and read its mixin config; if it targets `TileFissionPort` / `TileFissionController` / the TE tick loop, stop and reassess.
 
 ## OpenTerrainGenerator — source of the ruins (no patch)
 - `OpenTerrainGenerator-1.12.2-v9.7.jar` (+ `OpenTerrainGenerator` preset folder). Places the NC ruins/bunkers. 0.18% of the live profile. We don't change worldgen; the world is pregenerated.
@@ -95,8 +96,11 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 - `spark-unforged-1.11.140-forge.jar`. Commands over rcon: `podman exec minecraft rcon-cli "spark tickmonitor --threshold-tick 150"`, `"spark profiler start --timeout 1800"` (unfiltered) or `--only-ticks-over 200`.
 - Upload hosts (`spark.lucko.me`, `bytebin.lucko.me`) aren't reachable from the Claude sandbox; reduce `.sparkprofile` files with `tools/spark_summary.py` and paste the text.
 
-## Spawn chunks — owner-reported
-- The owner says spawn chunks are suppressed on the server (mod named "Kysxis" by the owner; not in `pack-mods.txt`, probably in `~/srv/minecraft-extra/mods/`). Relevant because spawn chunks can't be what keeps the ruins loaded.
+## Spawn chunks — Ksyxis
+- Spawn chunks are suppressed on the server by **`Ksyxis-1.4.6.jar`** (server only, confirmed in `pack-mods.txt`). Relevant because spawn chunks can't be what keeps the ruins loaded.
+
+## Chunk Pregenerator — server only
+- `Chunk Pregenerator-V1.12-2.5.1.jar` (server only). Pregenerating loads chunks on the main thread: make sure no pregen task runs during the NC baseline / P1 measurements (`/pregen` idle), or `/dpatch chunkloads` and tickmonitor numbers are skewed. It is not a chunk loader in normal play.
 
 ## Others seen in the profiles (context, not patched)
 | Mod | Jar | Where it shows up |
