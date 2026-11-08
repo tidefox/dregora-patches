@@ -16,7 +16,7 @@ found = None
 for page in range(0, 6):
     url = ("https://www.curseforge.com/api/v1/mods/%d/files?pageIndex=%d&pageSize=50"
            "&sort=dateCreated&sortDescending=true&removeAlphas=false" % (PROJECT, page))
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (dregora-server-mods CI)", "Accept": "application/json"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (dregora-patches CI)", "Accept": "application/json"})
     with urllib.request.urlopen(req, timeout=30) as r:
         data = json.load(r).get("data", [])
     if not data:

@@ -1,24 +1,24 @@
 #!/usr/bin/env bash
-# Boots a real Forge 1.12.2 dedicated server with FermiumBooter + Dregora Patches +
-# Warband (+ the patched mods, if given), runs "dpatch mixins", the stats commands, /trickshots and
-# "wb reload" on the console, stops it, and fails on mixin errors/exceptions.
+# Boots a real Forge 1.12.2 dedicated server with FermiumBooter + Dregora Patches
+# (+ the patched mods, if given), runs "dpatch mixins", the stats commands, /trickshots,
+# "dpatch reload" and "dpatch debug" on the console, stops it, and fails on mixin errors/exceptions.
 # Boots with FermiumBooter sorting before and after our jar, with the patched mods;
 # then once without them (late configs must skip quietly).
 #
-# usage: ci/smoke.sh <server-dir> <dregorapatches.jar> <warband.jar> <fermiumbooter.jar> [patched-mod.jar ...]
+# usage: ci/smoke.sh <server-dir> <dregorapatches.jar> <fermiumbooter.jar> [patched-mod.jar ...]
 #   <server-dir> must contain an installed Forge server (forge-*.jar + libraries/).
 #   patched mods: NuclearCraft 2.19a and Level Up! 2 1.1.23 (the server's jars).
 set -uo pipefail
 
 # Resolve everything to absolute paths before we cd into the server dir.
-DIR="$(readlink -f "$1")"; DP="$(readlink -f "$2")"; WB="$(readlink -f "$3")"; FERMIUM="$(readlink -f "$4")"
-shift 4
+DIR="$(readlink -f "$1")"; DP="$(readlink -f "$2")"; FERMIUM="$(readlink -f "$3")"
+shift 3
 EXTRA=()
 for f in "$@"; do EXTRA+=("$(readlink -f "$f")"); done
 HERE="$(cd "$(dirname "$0")" && pwd)"
 BOOT_TIMEOUT="${BOOT_TIMEOUT:-600}"
 
-for f in "$DP" "$WB" "$FERMIUM" "${EXTRA[@]}"; do
+for f in "$DP" "$FERMIUM" "${EXTRA[@]}"; do
   [ -f "$f" ] || { echo "::error::missing jar: $f"; exit 1; }
 done
 [ -d "$DIR" ] || { echo "::error::missing server dir: $DIR"; exit 1; }
@@ -27,11 +27,11 @@ run_once() { # <file name for the FermiumBooter jar in mods/> <with|without> pat
 cd "$DIR"
 rm -rf mods logs world config crash-reports
 mkdir -p mods
-cp "$FERMIUM" "mods/$1" && cp "$DP" "$WB" mods/ || { echo "::error::could not copy jars into mods/"; exit 1; }
-local want=3 mods_in=0
+cp "$FERMIUM" "mods/$1" && cp "$DP" mods/ || { echo "::error::could not copy jars into mods/"; exit 1; }
+local want=2 mods_in=0
 if [ "$2" = with ] && [ "${#EXTRA[@]}" -gt 0 ]; then
   cp "${EXTRA[@]}" mods/ || { echo "::error::could not copy patched mods into mods/"; exit 1; }
-  want=$((3 + ${#EXTRA[@]})); mods_in=1
+  want=$((2 + ${#EXTRA[@]})); mods_in=1
 fi
 [ "$(ls mods/*.jar | wc -l)" -eq "$want" ] || { echo "::error::expected exactly $want jars in mods/"; ls -la mods; exit 1; }
 echo "eula=true" > eula.txt
@@ -48,7 +48,7 @@ view-distance=3
 max-tick-time=-1
 server-port=25565
 snooper-enabled=false
-motd=dregora-server-mods smoke test
+motd=dregora-patches smoke test
 PROPS
 
 FORGE_JAR=$(ls forge-1.12.2-*.jar | grep -v installer | head -1)
@@ -71,7 +71,7 @@ wait_for() { # pattern timeout
 
 status=0
 if wait_for 'Done \([0-9.]+s\)! For help' "$BOOT_TIMEOUT"; then
-  echo "Server is up; running 'dpatch mixins', stats commands and 'wb reload'"
+  echo "Server is up; running 'dpatch mixins', stats commands, 'dpatch reload' and 'dpatch debug'"
   echo "dpatch mixins" >&3
   wait_for '\[dregorapatches\]: /dpatch mixins:' 60 || status=1
   if [ "$mods_in" = 1 ]; then
@@ -89,12 +89,12 @@ if wait_for 'Done \([0-9.]+s\)! For help' "$BOOT_TIMEOUT"; then
   wait_for '\[Reactor\] No claimed reactors' 60 || status=1
   echo "dpatch chunkloads 2" >&3
   wait_for 'chunkloads: chunkloads over' 60 || status=1
-  echo "wb reload" >&3
-  wait_for '\[warband\]: Config reloaded' 60 || status=1
-  echo "wb debug kill 1" >&3
+  echo "dpatch reload" >&3
+  wait_for '\[dregorapatches\]: Config reloaded' 60 || status=1
+  echo "dpatch debug kill 1" >&3
   wait_for 'Logging the next 1 deaths caused by a player' 60 || status=1
-  echo "wb debug off" >&3
-  wait_for 'Warband debug off' 60 || status=1
+  echo "dpatch debug off" >&3
+  wait_for 'Debug probe off' 60 || status=1
   echo "trickshots" >&3
   wait_for 'No trick shots yet' 60 || status=1
 else
@@ -123,9 +123,8 @@ require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapa
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.levelup2' "Mixin loaded the Level Up! 2 late config"
 require '\[dregorapatches\]: Dregora Patches .* ready' "dregorapatches started"
 require '\[dregorapatches\]: /dpatch mixins:' "/dpatch mixins ran"
-require '\[warband\]: Warband .* ready' "warband started"
-require '\[warband\]: Config reloaded' "/wb reload ran"
-require 'Logging the next 1 deaths caused by a player' "/wb debug kill ran"
+require '\[dregorapatches\]: Config reloaded' "/dpatch reload ran"
+require 'Logging the next 1 deaths caused by a player' "/dpatch debug kill ran"
 require 'No trick shots yet' "/trickshots read the (empty) records"
 require 'Stopping server' "server stopped cleanly"
 if [ "$mods_in" = 1 ]; then

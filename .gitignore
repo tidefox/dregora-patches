@@ -1,9 +1,11 @@
-libs/
-build/
 .gradle/
+build/
 run/
+out/
+libs/
 *.iml
 .idea/
-out/
+.vscode/
 smoke/
 dist/
+logs/

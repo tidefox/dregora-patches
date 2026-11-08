@@ -32,25 +32,19 @@ jobs:
       # Caches ~/.gradle, which includes RetroFuturaGradle's decompiled Minecraft/Forge and assets.
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Build and test dregorapatches
-        working-directory: dregorapatches
+      - name: Build and test
         run: ./gradlew build --stacktrace -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64
 
-      - name: Build and test warband
-        working-directory: warband
-        run: ./gradlew build --stacktrace -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64
-
-      - name: Pick and check release jars
+      - name: Pick and check release jar
         run: |
           set -euo pipefail
           mkdir -p dist
-          pick() { ls "$1"/build/libs/"$1"-*.jar | grep -vE -- '-(dev|sources|javadoc)\.jar$' | head -1; }
-          dp=$(pick dregorapatches); wb=$(pick warband)
-          [ -n "$dp" ] && [ -n "$wb" ] || { echo "::error::release jar missing"; exit 1; }
-          cp "$dp" "$wb" dist/
+          dp=$(ls build/libs/dregorapatches-*.jar | grep -vE -- '-(dev|sources|javadoc)\.jar$' | head -1)
+          [ -n "$dp" ] || { echo "::error::release jar missing"; exit 1; }
+          cp "$dp" dist/
 
           # Listings are captured first: "unzip | grep -q" fails under pipefail when grep exits early (SIGPIPE).
-          dpl=$(unzip -l "$dp"); wbl=$(unzip -l "$wb"); dpm=$(unzip -p "$dp" META-INF/MANIFEST.MF | tr -d '\r\n ')
+          dpl=$(unzip -l "$dp"); dpm=$(unzip -p "$dp" META-INF/MANIFEST.MF | tr -d '\r\n ')
           echo "--- dregorapatches manifest"; unzip -p "$dp" META-INF/MANIFEST.MF
           echo "--- dregorapatches contents"; echo "$dpl"
           for c in vanilla nc levelup2; do
@@ -66,9 +60,10 @@ jobs:
           if grep -qE ' (org/spongepowered|fermiumbooter|zone/rong|nc|levelup2)/' <<<"$dpl"; then
             echo "::error::dregorapatches must not bundle Mixin, FermiumBooter, MixinBooter or patched mods"; exit 1
           fi
-
-          echo "--- warband contents"; echo "$wbl"
-          if grep -qE 'org/spongepowered|mixins\..*\.json' <<<"$wbl"; then echo "::error::warband must not contain mixins"; exit 1; fi
+          # Features must stay plain observers: mixin classes only under mixin/.
+          if grep -E 'io/github/tidefox/dregorapatches/(trick|killfeed|combat|util)/' <<<"$dpl" | grep -qi mixin; then
+            echo "::error::feature packages must not contain mixins"; exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
@@ -80,9 +75,7 @@ jobs:
         if: failure()
         with:
           name: test-reports
-          path: |
-            dregorapatches/build/reports/
-            warband/build/reports/
+          path: build/reports/
 
   smoke:
     needs: build
@@ -135,11 +128,10 @@ jobs:
           name: jars
           path: smoke/dist
 
-      - name: Boot server (both jar orders + without patched mods), /dpatch, /reactor, /wb reload, stop
+      - name: Boot server (both jar orders + without patched mods), /dpatch, /reactor, /trickshots, stop
         run: >
           ci/smoke.sh smoke/server
           "$(ls smoke/dist/dregorapatches-*.jar | head -1)"
-          "$(ls smoke/dist/warband-*.jar | head -1)"
           smoke/fermiumbooter.jar
           smoke/nuclearcraft-1.12.2-2.19a.jar
           smoke/levelup2-1.1.23-1.12.jar
@@ -153,7 +145,6 @@ jobs:
             smoke/server/logs/
             smoke/server/crash-reports/
             smoke/server/config/dregorapatches.cfg
-            smoke/server/config/warband.cfg
           if-no-files-found: ignore
 
   release:
