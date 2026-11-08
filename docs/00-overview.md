@@ -21,7 +21,7 @@ History (2026-11-08): the separate **Warband** mod was dissolved. Trick shots an
 | `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | patch | **P1** | freeze: reactors run only after a player claims them (`/reactor`). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
 | `08-levelup2-furnace-scan.md` | Level Up! 2 per-tick tile-entity scan | patch | **P1** | no |
 | `06-trick-shots.md` | Trick shots (announced mobs only) | feature | **P2** | no |
-| `03-killfeed.md` | Kill feed (weapon, assists) | feature | P3 | no |
+| `03-killfeed.md` | Kill feed (weapon follow-up line) | feature | P3 (code done) | no |
 
 Per-mod versions, sources and the classes we touch: `reference/mods-context.md`.
 
@@ -61,7 +61,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | P0 ✔ | Scaffolded after `tidefox/skinbridge` (RFG 2.0.3); `./gradlew build` green; `runServer` boots; CI smoke boots Forge 2860 + FermiumBooter + the jar | jar builds, server starts with it in dev |
 | P1 | Patches: owner records a baseline on NC 2.19a (no NC update) → one jar: NC reactor freeze (on), NC chunk guard (off, flip after measuring), Level Up! 2 scan fix (`07 §3`, `08`) | 15 min `spark tickmonitor --threshold-tick 150` without the 45 s spikes; `doFurnaceTicks` < 0.1% in a 30 min profile |
 | P2 (code done) | feature core + 06 trick shots | trick shot fires only on announced mobs |
-| P3 | 03 kill feed | per doc tests |
+| P3 (code done) | 03 kill feed | per doc tests |
 
 ## Open decisions (defaults in use)
 - Java package root: `io.github.tidefox.dregorapatches` (build layout follows `tidefox/skinbridge`, see `CLAUDE.md` Setup).

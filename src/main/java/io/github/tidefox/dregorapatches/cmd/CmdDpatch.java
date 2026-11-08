@@ -22,6 +22,7 @@ import io.github.tidefox.dregorapatches.nc.FrozenTypes;
 import io.github.tidefox.dregorapatches.nc.NcScope;
 import io.github.tidefox.dregorapatches.nc.NcStats;
 import io.github.tidefox.dregorapatches.reactor.ReactorClaims;
+import io.github.tidefox.dregorapatches.trick.AnnouncedMobs;
 import net.minecraft.command.CommandBase;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.ICommandSender;
@@ -79,6 +80,7 @@ public class CmdDpatch extends CommandBase {
             }
         } else if (args.length == 1 && "reload".equals(args[0])) {
             ConfigManager.sync(Tags.MOD_ID, Config.Type.INSTANCE);
+            AnnouncedMobs.clearCache(); // mobs[] / nbtMarkers[] may have changed
             DregoraPatches.LOGGER.info("Config reloaded");
             send(sender, "Dregora Patches config reloaded.");
         } else if (args.length >= 2 && "debug".equals(args[0])) {

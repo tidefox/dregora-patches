@@ -15,6 +15,15 @@ class FmtTest {
     }
 
     @Test
+    void duration() {
+        assertEquals("0s", Fmt.duration(19));
+        assertEquals("42s", Fmt.duration(42 * 20 + 5));
+        assertEquals("1m00s", Fmt.duration(1200));
+        assertEquals("1m12s", Fmt.duration(72 * 20));
+        assertEquals("61m01s", Fmt.duration(3661 * 20));
+    }
+
+    @Test
     void leaderPadsToWidthWithAtLeastTwoDots() {
         assertEquals(" ........ ", Fmt.leader("Wyvern ×3", 17));
         assertEquals(" .. ", Fmt.leader("a very long source name", 10));

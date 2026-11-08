@@ -1,107 +1,60 @@
-# 03 — Kill feed (weapon, assists, fight stats) · server-only
+# 03 — Kill feed (weapon follow-up line) · server-only · passive
 
-Goal: every notable kill names the killer **and the weapon** (hoverable), including bow/crossbow kills, pet kills, and boss/Blight/dragon fights with assists and duration.
+Goal: every kill that already gets a line in chat also names **the weapon**, enchanted, renamed or plain, with a hover tooltip. We don't replace or reword anyone's message; we add one line under it:
+
+```
+Blight Zombie was slain by Alice                ← the pack's / vanilla's own line, untouched
+  ↳ with [Longbow] · 97m · final 22.0 · 1m12s   ← ours
+```
+```
+Bob was slain by Alice
+  ↳ with [Diamond Sword] · final 18.4 · 42s
+```
+
+Decided with the owner (2026-11-08): only weapon, distance, final hit, fight time. No assists, no trick-shot tier in this line, no streaks/revenge/pet credit, no replacing vanilla's message (no `showDeathMessages` gamerule trick).
 
 ---
 
 ## 1. Reference
 
 ### Why weapons don't show today
-Vanilla 1.12.2 `EntityDamageSource#getDeathMessage` only appends "using [item]" when the held item `hasDisplayName()` (anvil-renamed). Unnamed gear → no weapon. Arrows (`EntityDamageSourceIndirect`) use the *shooter's* held item at death time, not the bow that fired.
+Vanilla 1.12.2 `EntityDamageSource#getDeathMessage` only appends "using [item]" when the held item `hasDisplayName()` (anvil-renamed). Arrows (`EntityDamageSourceIndirect`) use the *shooter's* held item at death time, not the bow that fired.
 
-### Prior art
-- **Heroic Death** (1.12.2, needs Mixin): JSON death messages per source.
-- Bukkit DeathMessages: hoverable weapon placeholders, per-mob messages (feature target).
-
-### APIs
-| Need | API |
-|---|---|
-| Death hook | `LivingDeathEvent` (priority LOWEST, ignore if canceled) |
-| Damage tracking | `LivingDamageEvent` (post-armor, actual amount) |
-| Bow release | `ArrowLooseEvent` (gives bow stack, fires before arrow spawn) |
-| Projectile tagging | `EntityJoinWorldEvent` → `EntityArrow`, store in `entity.getEntityData()` |
-| Owner of pet | `IEntityOwnable#getOwner()` (vanilla, Ice and Fire dragons); Lycanites ⚠ verify it implements `IEntityOwnable`; if not, no pet credit (no reflection) |
-| Boss check | `!entity.isNonBoss()` + config registry list |
-| Blight / dragon / special-mob check | **Reuse `06` `AnnouncedMobs`** (vanilla boss flag, custom name, registry whitelist, NBT/ForgeCaps markers). No reflection into Scaling Health / Ice and Fire. |
-| Hover | `SHOW_ITEM` (weapon), `SHOW_ENTITY` (victim: `{name, type, id}`) |
-
----
+### Message order
+`EntityPlayerMP.onDeath` fires `LivingDeathEvent` *before* it sends the vanilla death message, so a line sent from the death event would land **above** it. The follow-up is queued and broadcast at `ServerTickEvent` END. ⚠ verify in-game that Scaling Health's Blight line (sent from its own death handler) also comes first.
 
 ## 2. Spec
 
-### 2.1 What gets announced
-| Event | Default |
+### 2.1 When
+| Kill | Follow-up |
 |---|---|
-| Player death | ON — follow-up line after vanilla message |
-| Player killed tracked mob (boss / Blight / dragon / whitelist) | ON |
-| Player killed any mob | OFF |
-| Pet/mount kill of tracked mob | ON (credited to owner) |
+| Player kills player | ON (`killfeed.playerKills`); skipped while gamerule `showDeathMessages` is false (no vanilla line to follow) |
+| Player kills an announced mob | ON (`killfeed.announcedMobKills`) |
+| Anything else | nothing |
 
-Scope: `kill.scope = GLOBAL | DIMENSION | RADIUS(n)`, default GLOBAL.
+"Announced mob" = `trick/AnnouncedMobs` (`06 §2.2`): boss flag, custom name, `trickshots.mobs`, `trickshots.nbtMarkers`. That list should match the mobs the pack itself announces (Blights via Scaling Health). Fill `nbtMarkers` from `/dpatch debug kill` on a Blight, and check which other kills get a pack line (⚠ verify: Champions, InfernalMobs, dragons, bosses).
 
-### 2.2 Attribution
-```
-trueSrc = source.getTrueSource()
-if trueSrc is EntityPlayerMP            → killer = trueSrc
-elif trueSrc is IEntityOwnable w/ player owner → killer = owner, via = trueSrc ("Raiko of Name")
-elif null && tracked.lastPlayerHit within 5 s   → killer = that player, verb = "finished off"  (lava, fall, void)
-else                                    → environment, no announce (unless player death)
+### 2.2 Credit and weapon
+- Killer = `source.getTrueSource()` if it is a player other than the victim. Otherwise no follow-up.
+- Weapon: projectile with our `dregorapatches:shot` tag from the killer → the launcher that fired it (survives weapon swaps); else the killer's main hand; empty hand → `bare-handed`.
+- Distance (blocks, shot origin → victim) only for tagged shots.
 
-weapon:
-  immediate has tag dregorapatches:shot (combat/ShotTag) → its launcher stack
-  immediate == killer                    → killer main hand
-  else                                   → killer main hand, marked "(indirect)"
-```
-Projectile tagging: done by `combat/ProjectileOrigin` (built in P2, `06 §2.1`) — `ShotTag.read(immediate).launcher`. No separate `LauncherTagger`. Covers Spartan crossbows if their bolts extend `EntityArrow` (⚠ verify with `/dpatch debug kill`).
+### 2.3 Final hit and fight time
+- Mobs: `LivingDamageEvent` at LOWEST (post-armor amount).
+- Players: `LivingHurtEvent` at LOW (First Aid cancels it at LOWEST, `00` observer rule 5); amount is before armor.
+- Only hits whose true source is a player, and for mobs only announced ones (cheap check first, `AnnouncedMobs.cached` second).
+- Fight = first player hit → death; a gap > `fightTimeoutSec` (60) starts a new fight. Fights < 1 s show no time. Final hit shown only if the killing hit landed that tick.
 
-### 2.3 Fight tracking (tracked targets only)
-- On `LivingDamageEvent` where victim tracked & attacker resolves to player: `fights[victimUUID].add(player, amount)`, set `start` on first hit.
-- **Cost rule:** this event fires for every hit on every entity, and mob ticking is already ~48% of server time (`reference/spark-live-54min-summary.txt`). Check the cheap condition first (attacker resolves to a player), and only then `isTracked`. `isTracked` may serialize NBT (`06 §2.2` rule 4), so cache its result per entity (`WeakHashMap<Entity, Boolean>`, or entity id + world, cleared on death/unload): at most one NBT read per mob.
-- Expire fight after `kill.fightTimeoutSec = 60` without damage; clear on death/unload.
-- On death: final-hit amount, duration, assists = players with damage in last `kill.assistWindowSec = 15` (excluding killer), sorted by damage.
+### 2.4 Config (`killfeed`)
+`enabled, playerKills, announcedMobKills, showDistance, showFinalHit, showDuration, fightTimeoutSec`.
 
-### 2.4 Message formats
-Player death (follow-up under vanilla line):
-```
-↳ [Lightning Dragonbone Longsword] · 18.4 dmg
-```
-Tracked kill:
-```
-⚔ Name slew [Ice Dragon (Stage 4)] with [Longbow] · final 22.0 · 1m12s
-   assists: Alice 340 · Bob 120
-```
-Option `kill.replaceVanillaPlayerDeath` → sets gamerule `showDeathMessages false` at server start and emits a full custom line instead.
+## 3. As built (P3, 2026-11-08)
+`killfeed/KillFeedListener` (events, tick-end queue), `killfeed/Fight` (pure), `killfeed/KillLine` (pure tail text), `killfeed/KillCredit`, `Fmt.duration`. `/dpatch reload` now also clears the `AnnouncedMobs` cache so new markers apply at once. Trick-shot callouts (`06`) are unchanged and still send their own line.
 
-Blight kills: Scaling Health already broadcasts; we only send the `↳` follow-up (`kill.blightFollowUpOnly = true`).
-
-### 2.5 Config
-`enabled, scope, radius, announcePlayerDeaths, announceBosses, announceBlights, announceDragons, announceAllMobs, whitelist, blacklist, assistWindowSec, fightTimeoutSec, replaceVanillaPlayerDeath, blightFollowUpOnly, showDamageNumbers`.
-
----
-
-## 3. Implementation plan
-
-```
-kill/
-  KillModule.java
-  Tracked.java            isTracked(entity) → trick/AnnouncedMobs.cached (per-entity cache, passive)
-  FightTracker.java       LivingDamageEvent accumulation, expiry tick
-  Attribution.java        killer/via/weapon resolution
-  KillAnnouncer.java      LivingDeathEvent → components → broadcast
-```
-
-### Steps
-1. `/dpatch debug damage` (core) on the live pack: record source types for bow, crossbow, Ice and Fire lightning chain, Lycanites pet hits, Blight hits. Fill ⚠ items.
-2. Melee attribution + hover weapon; player-death follow-up.
-3. Launcher from `ShotTag` (ProjectileOrigin, P2); test longbow, Spartan crossbow, Multishot/Splitshot arrows (every arrow tagged).
-4. Tracked detection via `AnnouncedMobs` (already built in P2).
-5. FightTracker + assists + duration.
-6. Pet credit (Raiko, dragons).
-7. Config, scope. All text as literal `TextComponentString` (clients have no lang file of ours; `CLAUDE.md` Conventions).
-
-### Tests
-- Unnamed sword kill → weapon shown.
-- Switch to sword after shooting, arrow kills → shows bow, not sword.
-- Knock tracked mob into lava → "finished off".
-- Server restart mid-fight → no NPE, fight dropped.
-- Clients without jar see everything.
+### Tests (in-game, need a client)
+- Unnamed sword PvP kill → `↳ with [Iron Sword] · final …` under the vanilla line.
+- Shoot, switch to sword, arrow kills → shows the bow and the distance.
+- Blight kill → our line under Scaling Health's line, not above.
+- Fists → `bare-handed`.
+- `gamerule showDeathMessages false` → no follow-up for player deaths.
+- Clients without the jar see everything; hover shows enchantments.

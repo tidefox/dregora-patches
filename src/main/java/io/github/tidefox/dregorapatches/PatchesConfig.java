@@ -95,7 +95,30 @@ public final class PatchesConfig {
     }
 
     public static final class KillFeed {
+        @Config.Comment({"One follow-up line under the death message already in chat:",
+                "  <victim> was slain by <player>",
+                "    -> with [weapon] · distance · final hit · fight time"})
         public boolean enabled = true;
+
+        @Config.Comment("Follow-up for a player killed by a player (needs gamerule showDeathMessages)")
+        public boolean playerKills = true;
+
+        @Config.Comment("Follow-up for announced mobs killed by a player: bosses, named mobs, and the "
+                + "trickshots.mobs / trickshots.nbtMarkers lists (e.g. Blights)")
+        public boolean announcedMobKills = true;
+
+        @Config.Comment("Shot distance for bow/crossbow kills")
+        public boolean showDistance = true;
+
+        @Config.Comment("Damage of the killing hit")
+        public boolean showFinalHit = true;
+
+        @Config.Comment("Time since the first player hit (fights under 1 s show none)")
+        public boolean showDuration = true;
+
+        @Config.Comment("A fight ends after this many seconds without a player hit")
+        @Config.RangeInt(min = 1, max = 3600)
+        public int fightTimeoutSec = 60;
     }
 
     private PatchesConfig() {}
