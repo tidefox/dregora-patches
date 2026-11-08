@@ -4,7 +4,6 @@ import net.minecraftforge.common.config.Config;
 
 /**
  * {@code config/dregorapatches.cfg}. Keys follow docs/07 §3 and docs/08.
- * P0: the switches exist, the patches behind them land in P1.
  */
 @Config(modid = Tags.MOD_ID)
 public final class PatchesConfig {

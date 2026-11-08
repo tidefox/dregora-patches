@@ -8,5 +8,5 @@
   "injectors": {
     "defaultRequire": 0
   },
-  "mixins": []
+  "mixins": ["MixinWorld", "MixinChunkProviderServer"]
 }

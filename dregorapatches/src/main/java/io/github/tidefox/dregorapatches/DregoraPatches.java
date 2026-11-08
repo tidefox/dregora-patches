@@ -5,9 +5,21 @@ import java.util.Set;
 
 import io.github.tidefox.dregorapatches.cmd.CmdDpatch;
 import io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin;
+import io.github.tidefox.dregorapatches.diag.ChunkLoadTracer;
 import io.github.tidefox.dregorapatches.mixinsupport.MixinState;
+import io.github.tidefox.dregorapatches.reactor.CmdReactor;
+import io.github.tidefox.dregorapatches.reactor.ReactorChunkLoader;
+import io.github.tidefox.dregorapatches.reactor.ReactorClaims;
+import io.github.tidefox.dregorapatches.reactor.ReactorEvents;
+import net.minecraftforge.common.ForgeChunkManager;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import net.minecraftforge.fml.common.gameevent.TickEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -19,6 +31,22 @@ public class DregoraPatches {
 
     public static final Logger LOGGER = LogManager.getLogger("dregorapatches");
 
+    /** Periodic stats line every 5 min when nc.logStats is on. */
+    private static final int LOG_INTERVAL = 6000;
+
+    @Mod.Instance(Tags.MOD_ID)
+    public static DregoraPatches instance;
+
+    private int ticks;
+
+    @Mod.EventHandler
+    public void init(FMLInitializationEvent event) {
+        MinecraftForge.EVENT_BUS.register(new ReactorEvents());
+        MinecraftForge.EVENT_BUS.register(new ChunkLoadTracer());
+        MinecraftForge.EVENT_BUS.register(this);
+        ForgeChunkManager.setForcedChunkLoadingCallback(this, new ReactorChunkLoader());
+    }
+
     @Mod.EventHandler
     public void serverStarting(FMLServerStartingEvent event) {
         if (!DregoraPatchesPlugin.isEnqueued()) {
@@ -28,7 +56,25 @@ public class DregoraPatches {
         for (Map.Entry<String, Set<String>> e : MixinState.snapshot().entrySet()) {
             applied += e.getValue().size();
         }
-        LOGGER.info("Dregora Patches {} ready: {} mixin(s) applied", Tags.VERSION, applied);
+        LOGGER.info("Dregora Patches {} ready: {} mixin(s) applied; freezeReactorParts={}, chunkGuard={}, furnaceScanFix={}",
+                Tags.VERSION, applied, PatchesConfig.nc.freezeReactorParts, PatchesConfig.nc.chunkGuard,
+                PatchesConfig.levelup2.furnaceScanFix);
+        ReactorClaims.load(event.getServer().getEntityWorld());
         event.registerServerCommand(new CmdDpatch());
+        event.registerServerCommand(new CmdReactor());
+    }
+
+    @Mod.EventHandler
+    public void serverStopped(FMLServerStoppedEvent event) {
+        ReactorClaims.unload();
+        ReactorChunkLoader.clear();
+    }
+
+    @SubscribeEvent
+    public void onServerTick(TickEvent.ServerTickEvent e) {
+        if (e.phase != TickEvent.Phase.END || !PatchesConfig.nc.logStats || ++ticks % LOG_INTERVAL != 0) return;
+        for (String l : CmdDpatch.ncStats(FMLCommonHandler.instance().getMinecraftServerInstance())) {
+            LOGGER.info("nc stats: {}", net.minecraft.util.text.TextFormatting.getTextWithoutFormattingCodes(l));
+        }
     }
 }

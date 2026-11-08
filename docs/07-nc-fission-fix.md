@@ -1,6 +1,6 @@
 # 07 — NuclearCraft ruin fix (fission port tick spikes) · Dregora Patches
 
-Status: **plan final** (2026-11-08). Next: P0 scaffolding (`CLAUDE.md` Setup), then §4. Mod versions and facts per mod: `reference/mods-context.md`.
+Status: **P1 code done** (2026-11-08): freeze + claims, chunk guard, `/reactor`, `/dpatch nc stats`, `/dpatch chunkloads` built and boot-tested on a real Forge 2860 server with NC 2.19a (§4.6). Next: owner baseline (§3 step 1), then live measurement (§4.2 steps 3–4). Mod versions and facts per mod: `reference/mods-context.md`.
 
 Goal: end the 1.1–2.6 s spikes every 45 s caused by worldgen NuclearCraft reactor ruins, and the steady NC cost they add every tick. The one gameplay change: a fission reactor runs only after a player claims it (§2.1).
 
@@ -164,7 +164,7 @@ Expected: the 45 s spikes, as in the existing profiles.
 
 **Coordinates:** shown as an **estimate** by default for everyone: X/Z rounded to the nearest `reactor.coordEstimate` blocks (default 100), no Y, plus dimension name. Exact X/Y/Z only for ops with the `-exact` flag.
 
-**Keep loaded (ops only):** `/reactor admin keeploaded <id> on|off` → a `ForgeChunkManager` ticket forcing only the chunks overlapping that reactor's claim box (≤ 3×3). Tickets are re-applied on world load through the mod's `LoadingCallback`. Disabled entirely with `reactor.allowKeepLoaded = false`.
+**Keep loaded (ops only):** `/reactor admin keeploaded <id> on|off` → a `ForgeChunkManager` ticket forcing only the chunks overlapping that reactor's claim box (≤ 5×5: the box is ±26 blocks, so 53 blocks wide; Forge's default `maximumChunksPerTicket` is 25. If a ticket allows fewer, the chunks nearest the controller are forced first and a warning is logged). Tickets are re-applied on world load through the mod's `LoadingCallback`. Disabled entirely with `reactor.allowKeepLoaded = false`.
 
 **Tick hook: the tick call itself**, not an NC method. NC `update()` methods chain through `super.update()` and do work after it (`TileFissionPort.update` = `super.update(); pushEnergy();`), so a HEAD inject on `NCTile.update` would miss part of the tick. Instead, wrap the `ITickable.update()` call inside `World.updateEntities` (early vanilla mixin, refmap) with MixinExtras `@WrapOperation`, which composes with other mods' wrappers instead of conflicting like `@Redirect` would:
 ```java
@@ -178,7 +178,7 @@ private void dp$tick(ITickable t, Operation<Void> original) {
 }
 ```
 `dp$isFrozen()`: false unless `cfg.nc.freezeReactorParts` and the TE is a frozen type outside every claim box; re-checked only when `ReactorClaims.epoch` (bumped on every claim/unclaim) differs from the TE's cached epoch. A frozen TE never runs `onAdded` (no `findController`) and never calls `pushEnergy` / `spreadFluid`. When a claim unfreezes many ports at once, spread their first tick over 20 ticks (`pos.hashCode() % 20`) to avoid a one-time hitch.
-Verified (P0): FermiumBooter 1.4.1 bundles and initialises MixinExtras 0.5.0 (`reference/mods-context.md`). ⚠ verify: no pack mixin already redirects this call (`javap`/grep mixin configs for `updateEntities`).
+Verified (P0): FermiumBooter 1.4.1 bundles and initialises MixinExtras 0.5.0 (`reference/mods-context.md`). ⚠ still open (needs the pack jars): no pack mixin already `@Redirect`s this call (grep the mixin configs of FermiumMixins/RLMixins/EagleMixins/SRPMixins/RLTweaker/fermiumasm for `updateEntities`). `@WrapOperation` composes with other wrappers; a conflicting `@Redirect` would show up as a mixin error at boot, and `/dpatch nc stats` would show `tick wrapper no`.
 
 Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0 except for claimed reactors. The port↔controller loop that keeps ruins loaded is gone. Buffers / scrubbers / generators may still load chunks → step 3.
 
@@ -192,7 +192,7 @@ Expected: `findController` (110 s / 54 min) and `pushEnergy` (108 s) go to ~0 ex
 1. `loadChunk(IILjava/lang/Runnable;)` at the `ForgeChunkManager.fetchDormantChunk` call (reached only when the chunk isn't loaded), cancellable → return a new `EmptyChunk(world, x, z)`. `World.getTileEntity` then returns `null`, `getBlockState` returns air, and `provideChunk` doesn't try to generate. The `CallbackInfoReturnable` is only allocated on this rare path.
 2. `getLoadedChunk(II)`: `@Redirect` the `PUTFIELD Chunk.unloadQueued` → skip the write while in scope. NC can still read a queued chunk this tick but no longer rescues it from unloading. No allocation.
 
-⚠ verify both injection points against a decompiled Forge 2860 `ChunkProviderServer` (the 54 min profile shows `loadChunk → fetchDormantChunk → syncChunkLoad`). This covers every NC caller in §1.2, including interface default methods and the scrubber's `getBlockState`, without per-method patches. Unfrozen ports are covered too: their `findController` sees air in unloaded chunks and gives the same "no controller" answer a reactor with a missing wall would.
+✔ Verified against the decompiled Forge 2860 `ChunkProviderServer` (RFG sources): `loadChunk(II Runnable)` calls `getLoadedChunk` and reaches `fetchDormantChunk` only when it returned null; `getLoadedChunk` writes `unloadQueued = false` on a hit. `loadChunk(II Runnable)` is Forge-added (no SRG name) → that injector is `remap = false`. **Vanilla `EmptyChunk` is `@SideOnly(CLIENT)` and missing on a dedicated server** (referencing it crashed the boot); the guard returns our own `nc.GuardChunk` (air, no TEs, writes ignored, never stored), reusing the last one per provider because `findController` hits the same chunk hundreds of times. This covers every NC caller in §1.2, including interface default methods and the scrubber's `getBlockState`, without per-method patches. Unfrozen ports are covered too: their `findController` sees air in unloaded chunks and gives the same "no controller" answer a reactor with a missing wall would.
 
 Expected: ruins away from players unload at autosave and stay unloaded → no NC frames in `/dpatch chunkloads`, no 45 s bursts.
 
@@ -221,7 +221,7 @@ Cache `findController` results per `(dim, pos)` (hit → master pos, miss), inva
 | `/reactor admin list [player] [-exact]` | op | all claims (or one player's); `-exact` shows full X/Y/Z |
 | `/reactor list -exact` | op | own claims with full X/Y/Z |
 | `/reactor admin unclaim <id>` | op | end any claim |
-| `/reactor admin keeploaded <id> on\|off` | op | force-load that reactor's chunks (≤ 3×3) |
+| `/reactor admin keeploaded <id> on\|off` | op | force-load that reactor's chunks (≤ 5×5, the claim box) |
 | `/dpatch nc stats` | op | frozen TEs by type and dimension, claims, frozen ticks skipped, guard blocks by TE class, "patched: yes/no" per mixin config |
 - `/dpatch chunkloads <seconds>`: logs every `ChunkEvent.Load` not caused by the player chunk map (skip stacks with `PlayerChunkMapEntry` or `ChunkIOProvider`), aggregated by first frame outside `net.minecraft`/`net.minecraftforge`, with chunk coords.
 
@@ -293,10 +293,21 @@ resources/mixins.dregorapatches.{vanilla,nc,levelup2}.json   ("required": false)
 |---|---|---|
 | ~~`FermiumRegistryAPI.enqueueMixin(boolean, String)` in 1.4.1~~ | ✔ P0: javap + smoke boot (early config needs the `injectData` fallback, `reference/mods-context.md`) | P0 |
 | ~~MixinExtras `@WrapOperation` available at runtime under FermiumBooter 1.4.1~~ | ✔ P0: MixinExtras 0.5.0 bundled in FermiumBooter 1.4.1 | freeze, scope |
-| No other pack mixin wraps/redirects `ITickable.update()` in `World.updateEntities`, or targets `ChunkProviderServer.loadChunk/getLoadedChunk` | grep mixin configs + classes in FermiumMixins, RLMixins, EagleMixins, SRPMixins, RLTweaker, fermiumasm | freeze, guard |
-| Forge 2860 `ChunkProviderServer.loadChunk(II Runnable)` calls `fetchDormantChunk` only when `getLoadedChunk` returned null; `getLoadedChunk` writes `unloadQueued = false` | decompile the server jar | guard |
+| No other pack mixin wraps/redirects `ITickable.update()` in `World.updateEntities`, or targets `ChunkProviderServer.loadChunk/getLoadedChunk` | grep mixin configs + classes in FermiumMixins, RLMixins, EagleMixins, SRPMixins, RLTweaker, fermiumasm | ⚠ **open** (needs the pack jars); a conflict shows as a boot error or "no" in `/dpatch nc stats` |
+| ~~Forge 2860 `ChunkProviderServer.loadChunk(II Runnable)` calls `fetchDormantChunk` only when `getLoadedChunk` returned null; `getLoadedChunk` writes `unloadQueued = false`~~ | ✔ decompiled (RFG); see §3 step 3 | guard |
 | ~~`RLC_Nuclear` (Dregora 1.2.0-beta-2) doesn't already patch these classes~~ | ✔ not installed on server or client (`reference/mods-context.md`) | everything NC |
-| `BlockEvent.EntityPlaceEvent` exists in Forge 2860 (else `PlaceEvent`) | compile | claims |
-| NC block ids: `nuclearcraft:fission_controller_new_idle/_active/_fixed`, `fission_controller_idle/_active` | NC `NCBlocks` (2.19a) | claims |
-| Level Up! 2 1.1.23 matches the source in `08 §1.2` | javap | `08` |
+| ~~`BlockEvent.EntityPlaceEvent` exists in Forge 2860~~ | ✔ exists (`PlaceEvent` extends it) | claims |
+| ~~NC block ids~~ | ✔ `NCBlocks` 2.19a: `fission_controller_idle/_active`, `fission_controller_new_idle/_active/_fixed`. Placement matches `nuclearcraft:fission_controller*`; "controller present" is a `TileFissionController` TE check | claims |
+| ~~Level Up! 2 1.1.23 matches the source in `08 §1.2`~~ | ✔ javap | `08` |
 
+### 4.6 As built (2026-11-08)
+Layout matches §4.1, plus: `nc/DpNcTile` (duck interface, outside the mixin package), `nc/NcCompat` (NCConfig + controller status), `nc/GuardChunk`, `nc/NcStats`, `reactor/{Claim,ClaimBox,CoordFormat,TokenStore}` (pure, unit-tested), `diag/StackClassifier` (unit-tested), `levelup2/{FurnaceScan,CandidateCache}`.
+- Controller status is read by cached reflection (public fields `complete`, `problem`, `heat`, `currentEnergyStored`, methods `isProcessing()`, `getMaxHeat()`): `TileFissionController` implements OpenComputers/IC2 API interfaces that aren't on our compile classpath. A failed read keeps the old status; it never ends a claim.
+- A break of a claimed/placed controller is re-checked at the end of the tick (another mod may cancel the break); the lazy "controller gone" check runs with the 100-tick status snapshot and never loads a chunk.
+- Late mixin configs skip quietly when their mod is absent (config plugin checks the target class resource).
+
+Boot test on a real Forge 2860 dedicated server + FermiumBooter 1.4.1 + NC 2.19a + Level Up! 2 1.1.23 (now also in `ci/smoke.sh`):
+- all 5 mixins apply; `setblock` port / active cooler / controller → all three frozen, ticks skipped.
+- `freezeReactorParts = false`, port at the edge of the loaded spawn area: guard off → `/dpatch chunkloads` attributes a disk load to `nc.util.BlockFinder.getBlockState` (port `findController`); guard on → 0 loads, ~1,400 blocked (`TileFissionPort`, `TileBuffer`).
+- Not testable headless (needs a player): claim prompt / claim / unclaim, keep-loaded, owned furnace bonus. Those stay in §4.4 for the dev client and the owner.
+- Note for testing: with no player online, `WorldServer` stops ticking entities and tile entities 300 ticks after the last player leaves (vanilla), so empty-server measurements only cover the first 15 s.

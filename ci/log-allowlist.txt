@@ -2,3 +2,5 @@
 # Forge 1.12.2 + FermiumBooter server and must not fail the smoke test.
 # FermiumBooter INFO line naming its own config option "Append General Mixin Exceptions To Crash Reports"
 \[FermiumJarScanner\]: FermiumMixinConfig enqueueing mixin\(s\) parsed from annotated config
+# Level Up! 2 prints a stack trace per missing default skill JSON on a fresh config dir
+\[STDERR\]: \[levelup2\.skills\.SkillRegistry:loadFromJson:[0-9]+\]

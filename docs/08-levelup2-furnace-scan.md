@@ -1,6 +1,6 @@
 # 08 — Level Up! 2 furnace scan · Dregora Patches
 
-Status: **plan final** (2026-11-08). Built in the same pass as `07` (`07 §4.2` step 2: right after the mixin plumbing). Mod context: `reference/mods-context.md`.
+Status: **built** (2026-11-08): `mixin/levelup2/MixinFurnaceEfficiencyBonus` + `levelup2/FurnaceScan` + `levelup2/CandidateCache` (unit-tested); applies on a real server with the 1.1.23 jar (`ci/smoke.sh`). In-game owned-furnace comparison (§3) still to do with a client. Mod context: `reference/mods-context.md`.
 
 Goal: remove the ~2.3 ms per tick that Level Up! 2 spends scanning every loaded tile entity, with no gameplay change.
 
