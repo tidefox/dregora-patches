@@ -6,3 +6,4 @@ libs/
 *.iml
 .idea/
 .vscode/
+logs/
