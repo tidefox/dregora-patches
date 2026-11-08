@@ -1,0 +1,118 @@
+plugins {
+    id 'java'
+    id 'com.gtnewhorizons.retrofuturagradle' version '2.0.3'
+}
+
+version = project.mod_version
+group = 'io.github.tidefox.dregorapatches'
+
+base {
+    archivesName.set(project.mod_id)
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
+}
+
+minecraft {
+    mcVersion.set('1.12.2')
+    mcpMappingChannel.set(project.mapping_channel)
+    mcpMappingVersion.set(project.mapping_version)
+    username.set('Developer')
+    injectedTags.put('VERSION', project.version.toString())
+    injectedTags.put('MOD_ID', project.mod_id)
+    injectedTags.put('MOD_NAME', project.mod_name)
+    // Dev runs: the coremod is on the classpath, not in a jar with a manifest.
+    extraRunJvmArguments.add('-Dfml.coreMods.load=io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin')
+}
+
+tasks.named('injectTags').configure {
+    outputClassName.set('io.github.tidefox.dregorapatches.Tags')
+}
+
+repositories {
+    maven {
+        name = 'CleanroomMC'
+        url = 'https://maven.cleanroommc.com'
+        content {
+            includeGroup 'zone.rong'
+            includeGroup 'com.cleanroommc'
+        }
+    }
+    maven {
+        name = 'CurseMaven'
+        url = 'https://www.cursemaven.com'
+        content { includeGroup 'curse.maven' }
+    }
+    mavenCentral()
+}
+
+configurations {
+    // Jars copied into run/mods for ./gradlew runServer / runClient (RFG runs in run/).
+    devMods { transitive = false }
+}
+
+dependencies {
+    // Mixin annotations + AP; RFG wires the reobf SRG mappings into the AP and
+    // writes the refmap under the given name (used by the early/vanilla config).
+    String mixinDep = modUtils.enableMixins(project.mixin_ap_artifact, 'mixins.dregorapatches.refmap.json')
+    compileOnly(mixinDep) { transitive = false }
+    annotationProcessor mixinDep
+
+    // FermiumBooter API (FermiumRegistryAPI). Provided by the server at runtime.
+    compileOnly "curse.maven:fermiumbooter-${project.fermium_project_id}:${project.fermium_file_id}"
+
+    // Patched mods: compile-only, never shipped. Mixins into them use remap = false.
+    compileOnly rfg.deobf("curse.maven:nuclearcraft-${project.nc_project_id}:${project.nc_file_id}")
+    if (project.levelup2_file_id?.trim()) {
+        compileOnly rfg.deobf("curse.maven:levelup2-${project.levelup2_project_id}:${project.levelup2_file_id}")
+    }
+    // Fallback for jars that are not on CurseMaven (e.g. Level Up! 2): drop them into libs/.
+    fileTree(dir: 'libs', include: '*.jar').each { File f ->
+        compileOnly rfg.deobf(files(f))
+    }
+
+    // FermiumBooter must sit in mods/ (its tweaker is only read from mod jars' manifests).
+    devMods "curse.maven:fermiumbooter-${project.fermium_project_id}:${project.fermium_file_id}"
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def copyDevMods = tasks.register('copyDevMods', Copy) {
+    from configurations.devMods
+    into 'run/mods'
+}
+['runServer', 'runClient'].each { String t ->
+    tasks.named(t).configure { dependsOn copyDevMods }
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events 'failed'
+        exceptionFormat 'full'
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('mcmod.info') {
+        expand('version': project.version, 'mod_id': project.mod_id, 'mod_name': project.mod_name)
+    }
+}
+
+jar {
+    manifest {
+        attributes(
+            'FMLCorePlugin': 'io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin',
+            'FMLCorePluginContainsFMLMod': 'true',
+            'ForceLoadAsMod': 'true',
+            'Implementation-Title': project.mod_name,
+            'Implementation-Version': project.version
+        )
+    }
+}
