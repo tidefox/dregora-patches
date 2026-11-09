@@ -8,7 +8,7 @@ Everything here runs **on the server only**. Players install nothing.
 
 | Mod | Mod ID | Where | What |
 |---|---|---|---|
-| **Dregora Patches** | `dregorapatches` | repo root (`tidefox/dregora-patches`) | coremod jar with two kinds of modules: **patches** (mixins into pack mods: NuclearCraft ruin tick spikes, Level Up! 2 furnace scan) and **features** (plain Forge event observers for this server: trick shots, kill feed) |
+| **Dregora Patches** | `dregorapatches` | repo root (`tidefox/dregora-patches`) | coremod jar with two kinds of modules: **patches** (mixins into pack mods: NuclearCraft ruin tick spikes, Level Up! 2 furnace scan, Lycanites pet teleport) and **features** (plain Forge event observers for this server: trick shots, kill feed) |
 
 Everything is specific to RLCraft Dregora and ships to one server, so it's one jar and one CI pipeline. Each module has its own `<module>.enabled`-style switch, so a misbehaving module is turned off in `config/dregorapatches.cfg` without removing the jar.
 
@@ -20,6 +20,7 @@ History (2026-11-08): the separate **Warband** mod was dissolved. Trick shots an
 |---|---|---|---|---|
 | `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | patch | **P1** | freeze: reactors run only after a player claims them (`/reactor`). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
 | `08-levelup2-furnace-scan.md` | Level Up! 2 per-tick tile-entity scan | patch | **P1** | no |
+| `09-lycanites-pet-recall.md` | Lycanites: summoning-menu Teleport works for pets in unloaded chunks | patch | done | yes: Teleport now brings back a pet left in an unloaded chunk (respawned at you) |
 | `06-trick-shots.md` | Trick shots (announced mobs only) | feature | **P2** | no |
 | `03-killfeed.md` | Kill feed (weapon follow-up line) | feature | P3 (code done) | no |
 
@@ -52,7 +53,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | `/trickshots [player]` | all |
 | `/reactor list`, `/reactor claim [token]`, `/reactor unclaim <id>` | all |
 | `/reactor list -exact`, `/reactor admin list [player] [-exact]`, `/reactor admin unclaim <id>`, `/reactor admin keeploaded <id> on\|off` | op |
-| `/dpatch mixins`, `/dpatch chunkloads <seconds>`, `/dpatch nc stats`, `/dpatch levelup2 stats` | op |
+| `/dpatch mixins`, `/dpatch chunkloads <seconds>`, `/dpatch nc stats`, `/dpatch levelup2 stats`, `/dpatch lycanites stats` | op |
 | `/dpatch reload`, `/dpatch debug damage [n]`, `/dpatch debug kill [n]`, `/dpatch debug off` | op |
 
 ## Phases

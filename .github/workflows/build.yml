@@ -47,7 +47,7 @@ jobs:
           dpl=$(unzip -l "$dp"); dpm=$(unzip -p "$dp" META-INF/MANIFEST.MF | tr -d '\r\n ')
           echo "--- dregorapatches manifest"; unzip -p "$dp" META-INF/MANIFEST.MF
           echo "--- dregorapatches contents"; echo "$dpl"
-          for c in vanilla nc levelup2; do
+          for c in vanilla nc levelup2 lycanites; do
             grep -q "mixins.dregorapatches.$c.json" <<<"$dpl" || { echo "::error::mixins.dregorapatches.$c.json missing"; exit 1; }
           done
           grep -q 'FMLCorePlugin:io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin' <<<"$dpm" \
@@ -57,7 +57,7 @@ jobs:
             grep -q 'mixins.dregorapatches.refmap.json' <<<"$dpl" || { echo "::error::refmap missing"; exit 1; }
             echo "--- refmap"; unzip -p "$dp" mixins.dregorapatches.refmap.json
           fi
-          if grep -qE ' (org/spongepowered|fermiumbooter|zone/rong|nc|levelup2)/' <<<"$dpl"; then
+          if grep -qE ' (org/spongepowered|fermiumbooter|zone/rong|nc|levelup2|com/lycanitesmobs)/' <<<"$dpl"; then
             echo "::error::dregorapatches must not bundle Mixin, FermiumBooter, MixinBooter or patched mods"; exit 1
           fi
           # Features must stay plain observers: mixin classes only under mixin/.
@@ -118,10 +118,11 @@ jobs:
         run: ci/fetch-fermium.sh "${{ matrix.fermium_file_id }}" "$FERMIUM_VERSION" smoke/fermiumbooter.jar
 
       # The server's exact jars (sha1-checked), so the late NC / Level Up! 2 mixins are applied too.
-      - name: Fetch NuclearCraft 2.19a and Level Up! 2 1.1.23
+      - name: Fetch NuclearCraft 2.19a, Level Up! 2 1.1.23 and Lycanites Mobs 2.0.8.10
         run: |
           ci/fetch-mod.sh nuclearcraft 226254 6151363 05db28e36a141316f8fa511f226c794110e58d12 smoke/nuclearcraft-1.12.2-2.19a.jar
           ci/fetch-mod.sh levelup2 251136 2763516 e41da79233cb9e37824cb05e9a5db7588bec599d smoke/levelup2-1.1.23-1.12.jar
+          ci/fetch-mod.sh lycanitesmobs 224770 5750564 56c49cf01d62ee0715cc38b7d784165bcc1339d0 smoke/lycanitesmobs-1.12.2-2.0.8.10.jar
 
       - uses: actions/download-artifact@v4
         with:
@@ -135,6 +136,7 @@ jobs:
           smoke/fermiumbooter.jar
           smoke/nuclearcraft-1.12.2-2.19a.jar
           smoke/levelup2-1.1.23-1.12.jar
+          smoke/lycanitesmobs-1.12.2-2.0.8.10.jar
 
       - uses: actions/upload-artifact@v4
         if: always()

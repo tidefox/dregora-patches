@@ -4,7 +4,7 @@ Handoff for Claude Code. Read this, then `docs/00-overview.md`, then the doc for
 
 ## What this repo is
 One **server-side-only** Forge mod for the owner's RLCraft Dregora 1.1.2b co-op server (Minecraft 1.12.2, Forge 14.23.5.2860, Java 8; ~6 concurrent players, 4 regulars): **Dregora Patches** (`dregorapatches`), a coremod jar with
-- **patches**: mixin fixes for pack mods (NuclearCraft, Level Up! 2), and
+- **patches**: mixin fixes for pack mods (NuclearCraft, Level Up! 2, Lycanites Mobs), and
 - **features**: passive Forge event observers for this server (trick shots, kill feed).
 
 Single Gradle project at the repo root. Repo: `tidefox/dregora-patches` (formerly `dregora-server-mods`).
@@ -16,6 +16,7 @@ Single Gradle project at the repo root. Repo: `tidefox/dregora-patches` (formerl
 docs/00-overview.md          scope, rules, phases, commands  ← start here
 docs/07-nc-fission-fix.md    Patches P1 (live lag problem)
 docs/08-levelup2-furnace-scan.md  Patches P1 (steady 2.3 ms/tick)
+docs/09-lycanites-pet-recall.md   Patches: summoning-menu Teleport for pets in unloaded chunks
 docs/06-trick-shots.md       feature P2
 docs/03-killfeed.md          feature P3 (code done)
 docs/handoff/friendly-fire-rework.md  spec for the separate friendly-fire repo — not built here
@@ -73,6 +74,8 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 
 **P3 status: code done** (2026-11-08): `killfeed/` adds one line under the existing death message for PvP kills and announced-mob kills (`docs/03 §3`). Still untested (needs a client): every test in `03 §3`; message order under Scaling Health's Blight line.
 2026-11-09, dynamic kill feed (`docs/03 §2.5`): owner saw pack kill lines with no follow-up. Now `killfeed/ChatTap` (vanilla `PlayerList`/`EntityPlayerMP` send hooks) sees every system line; any line naming the dead mob/player within `lineWaitTicks` gets the follow-up, whatever mod sent it. Notable mobs nothing announced (bosses, Blights, `killfeed.announceMobs` = Ice and Fire dragons + sea serpent, `announceMinMaxHealth`) get our own `[Fire Dragon] was slain by Alice` + follow-up. Credit also goes to a pet's owner and, for deaths with no attacker (fire/bleed/fall), to the last hitter within `lingerCreditSec`. Smoke: both hooks apply. ⚠ verify in-game: IaF registry ids, dragon death fires once.
+
+**Lycanites pet recall: code done** (2026-11-09, `docs/09`): Teleport in the summoning menu respawns a pet/mount whose chunk unloaded (Lycanites kept a stale, not-dead reference). Compiles against `curse.maven:lycanitesmobs-224770:5750564` (2.0.8.10); smoke applies it. Still untested (needs a client): `09 §3`.
 
 RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-beta-2 only; re-check if the server moves to 1.2.x). Keep Chunk Pregenerator idle during P1 measurements.
 

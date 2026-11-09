@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Coremod entry point. Its only job is to hand our mixin configs to FermiumBooter:
- * the vanilla config as an EARLY mixin, the mod configs (NuclearCraft, Level Up! 2)
+ * the vanilla config as an EARLY mixin, the mod configs (NuclearCraft, Level Up! 2, Lycanites)
  * as LATE mixins. FermiumBooter adds early configs in its own injectData (SortingIndex
  * 990, after ours) and late configs once mods are on the classpath.
  *
@@ -29,6 +29,7 @@ public class DregoraPatchesPlugin implements IFMLLoadingPlugin {
     public static final String CONFIG_VANILLA = "mixins.dregorapatches.vanilla.json";
     public static final String CONFIG_NC = "mixins.dregorapatches.nc.json";
     public static final String CONFIG_LEVELUP2 = "mixins.dregorapatches.levelup2.json";
+    public static final String CONFIG_LYCANITES = "mixins.dregorapatches.lycanites.json";
 
     private static final Logger LOGGER = LogManager.getLogger("dregorapatches");
 
@@ -55,14 +56,16 @@ public class DregoraPatchesPlugin implements IFMLLoadingPlugin {
         FermiumCompat.enqueueMixin(false, CONFIG_VANILLA);
         FermiumCompat.enqueueMixin(true, CONFIG_NC);
         FermiumCompat.enqueueMixin(true, CONFIG_LEVELUP2);
+        FermiumCompat.enqueueMixin(true, CONFIG_LYCANITES);
         if (lastChance) {
             // Constructor ran before FermiumBooter was on the classpath; its injectData may
             // already have flushed the early list. Late configs are still picked up.
             FermiumCompat.addEarlyConfigNow(CONFIG_VANILLA);
         }
         enqueued = true;
-        LOGGER.info("Enqueued {} (early{}), {} and {} (late) with FermiumBooter",
-                CONFIG_VANILLA, lastChance ? ", added from injectData" : "", CONFIG_NC, CONFIG_LEVELUP2);
+        LOGGER.info("Enqueued {} (early{}), {}, {} and {} (late) with FermiumBooter",
+                CONFIG_VANILLA, lastChance ? ", added from injectData" : "", CONFIG_NC, CONFIG_LEVELUP2,
+                CONFIG_LYCANITES);
     }
 
     /** True once our configs were handed to FermiumBooter. */

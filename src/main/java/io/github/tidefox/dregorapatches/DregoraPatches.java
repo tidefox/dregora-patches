@@ -36,7 +36,7 @@ import org.apache.logging.log4j.Logger;
  */
 @Mod(modid = Tags.MOD_ID, name = Tags.MOD_NAME, version = Tags.VERSION,
         acceptableRemoteVersions = "*", acceptedMinecraftVersions = "[1.12.2]",
-        dependencies = "after:nuclearcraft;after:levelup2")
+        dependencies = "after:nuclearcraft;after:levelup2;after:lycanitesmobs")
 public class DregoraPatches {
 
     public static final Logger LOGGER = LogManager.getLogger("dregorapatches");
@@ -73,9 +73,9 @@ public class DregoraPatches {
         for (Map.Entry<String, Set<String>> e : MixinState.snapshot().entrySet()) {
             applied += e.getValue().size();
         }
-        LOGGER.info("Dregora Patches {} ready: {} mixin(s) applied; freezeReactorParts={}, chunkGuard={}, furnaceScanFix={}",
-                Tags.VERSION, applied, PatchesConfig.nc.freezeReactorParts, PatchesConfig.nc.chunkGuard,
-                PatchesConfig.levelup2.furnaceScanFix);
+        LOGGER.info("Dregora Patches {} ready: {} mixin(s) applied; freezeReactorParts={}, chunkGuard={}, furnaceScanFix={}, "
+                + "petRecallFix={}", Tags.VERSION, applied, PatchesConfig.nc.freezeReactorParts, PatchesConfig.nc.chunkGuard,
+                PatchesConfig.levelup2.furnaceScanFix, PatchesConfig.lycanites.petRecallFix);
         ReactorClaims.load(event.getServer().getEntityWorld());
         event.registerServerCommand(new CmdDpatch());
         event.registerServerCommand(new CmdReactor());

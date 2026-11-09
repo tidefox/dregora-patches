@@ -18,6 +18,9 @@ public final class PatchesConfig {
     @Config.Comment("Level Up! 2 (docs/08)")
     public static final LevelUp2 levelup2 = new LevelUp2();
 
+    @Config.Comment("Lycanites Mobs pets (docs/09)")
+    public static final Lycanites lycanites = new Lycanites();
+
     @Config.Comment("Trick shots on announced mobs (docs/06)")
     public static final TrickShots trickshots = new TrickShots();
 
@@ -55,6 +58,12 @@ public final class PatchesConfig {
     public static final class LevelUp2 {
         @Config.Comment("Only check furnaces/brewing stands instead of every loaded tile entity each tick (same gameplay).")
         public boolean furnaceScanFix = true;
+    }
+
+    public static final class Lycanites {
+        @Config.Comment("Teleport in the summoning menu also works for a pet/mount whose chunk was unloaded: "
+                + "it is respawned at you with its level, XP, inventory and health.")
+        public boolean petRecallFix = true;
     }
 
     public static final class TrickShots {

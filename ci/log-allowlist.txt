@@ -4,3 +4,5 @@
 \[FermiumJarScanner\]: FermiumMixinConfig enqueueing mixin\(s\) parsed from annotated config
 # Level Up! 2 prints a stack trace per missing default skill JSON on a fresh config dir
 \[STDERR\]: \[levelup2\.skills\.SkillRegistry:loadFromJson:[0-9]+\]
+# Lycanites Mobs 2.0.8.10 reads config/lycanitesmobs/mobevents before creating it on a fresh config
+[0-9]+:java\.nio\.file\.NoSuchFileException: \./config/lycanitesmobs/mobevents$
