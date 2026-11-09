@@ -29,13 +29,14 @@ Every Multishot/Splitshot arrow gets its own tag (the `ArrowLooseEvent` stash is
 ### 2.2 "Announced mob" (passive detection)
 Mob qualifies if **any**:
 1. `!victim.isNonBoss()` (vanilla boss flag — dragons, withers, modded bosses that set it)
-2. `victim.hasCustomName()` (mods that name special mobs)
-3. registry id ∈ `trickshot.mobs` (manual whitelist)
-4. victim NBT (`writeToNBT` + `getEntityData`) contains a key ∈ `trickshot.nbtMarkers` — read-only, e.g. the marker Blights carry. Includes keys under `ForgeCaps` (where Forge serializes mod capabilities, e.g. a Champions tier), still plain vanilla NBT.
+2. Scaling Health Blight: ForgeData `ScalingHealth.IsBlight` is true (`trickshots.blights`, default on; ✔ verified in the 1.3.42 jar, `03 §2.1`)
+3. `victim.hasCustomName()` (mods that name special mobs)
+4. registry id ∈ `trickshot.mobs` (manual whitelist)
+5. victim NBT (`writeToNBT` + `getEntityData`) contains a key ∈ `trickshot.nbtMarkers` — read-only, e.g. the marker Blights carry. Includes keys under `ForgeCaps` (where Forge serializes mod capabilities, e.g. a Champions tier), still plain vanilla NBT.
 
-Items 3–4 are filled from `/dpatch debug kill` output (§2.6) — no guessing other mods' internals.
+Items 4–5 are filled from `/dpatch debug kill` output (§2.6) — no guessing other mods' internals.
 
-Evaluate rules 1–3 first (cheap) and rule 4 only if they fail; rule 4 calls `writeToNBT`, a full entity serialization. Here it runs once per qualifying kill, which is fine; `03` calls the same check per hit and must cache it (`03 §2.3`).
+Evaluate rules 1–4 first (cheap) and rule 5 only if they fail; rule 5 calls `writeToNBT`, a full entity serialization. Here it runs once per qualifying kill, which is fine; `03` calls the same check per hit and must cache it (`03 §2.3`).
 
 Candidates in this pack to run the debug against: Scaling Health Blights, Champions, InfernalMobs, Lycanites bosses, playerbosses, Ice and Fire dragons.
 

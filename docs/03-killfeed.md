@@ -32,7 +32,9 @@ Vanilla 1.12.2 `EntityDamageSource#getDeathMessage` only appends "using [item]" 
 | Player kills an announced mob | ON (`killfeed.announcedMobKills`) |
 | Anything else | nothing |
 
-"Announced mob" = `trick/AnnouncedMobs` (`06 §2.2`): boss flag, custom name, `trickshots.mobs`, `trickshots.nbtMarkers`. That list should match the mobs the pack itself announces (Blights via Scaling Health). Fill `nbtMarkers` from `/dpatch debug kill` on a Blight, and check which other kills get a pack line (⚠ verify: Champions, InfernalMobs, dragons, bosses).
+"Announced mob" = `trick/AnnouncedMobs` (`06 §2.2`): boss flag, Blight flag (`trickshots.blights`), custom name, `trickshots.mobs`, `trickshots.nbtMarkers`. That list should match the mobs the pack itself announces (Blights via Scaling Health). Check which other kills get a pack line (⚠ verify: Champions, InfernalMobs, dragons, bosses).
+
+Blights (✔ verified against `ScalingHealth-1.12.2-1.3.42+147.jar`, 2026-11-09): `BlightHandler.isBlight` = `entity.getEntityData().getBoolean("ScalingHealth.IsBlight")`; the `Blight {} was killed by {}` line is sent from Scaling Health's own `LivingDeathEvent` handler (`onBlightKilled`), so it lands before our tick-end follow-up. Before this fix the follow-up never fired for Blights: they were only matched through `nbtMarkers`, which shipped empty. Now a built-in rule (`trickshots.blights = true`, a cheap ForgeData read, no serialization) covers them; a new config field, so existing server cfgs pick it up with its default.
 
 Pack line for Blights (seen on the server, 2026-11-08): `Blight <mob name> was killed by <player>!`, e.g. `Blight Xaphan Lvl 4 was killed by Crossfire!`. ⚠ verify: the `Lvl 4` is Lycanites' level in the mob's name. If Lycanites sets it as a *custom name*, the `NAMED` rule in `AnnouncedMobs` would match every Lycanites mob and give them a follow-up with no pack line above it. `/dpatch debug kill` prints `customName=`; if it's set on ordinary Lycanites mobs, add a way to turn off the `NAMED` rule.
 

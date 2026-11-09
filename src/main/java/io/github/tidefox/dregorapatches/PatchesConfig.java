@@ -67,6 +67,9 @@ public final class PatchesConfig {
         @Config.Comment("Tiers as name=distance, any order. Highest reached tier names the shot.")
         public String[] tiers = {"Nice shot=40", "Long shot=64", "Sniper=96", "Legendary=128"};
 
+        @Config.Comment("Scaling Health Blights count as announced (ForgeData ScalingHealth.IsBlight, the flag Scaling Health itself checks)")
+        public boolean blights = true;
+
         @Config.Comment("Registry ids that always count as announced, e.g. iceandfire:icedragon")
         public String[] mobs = {};
 
@@ -75,7 +78,7 @@ public final class PatchesConfig {
                 "Syntax examples: SomeKey, ForgeCaps/modid:cap/tier!=0, ForgeData/Variant=boss. Fill from /dpatch debug kill."})
         public String[] nbtMarkers = {};
 
-        @Config.Comment("Only announce kills of announced mobs (bosses, named, mobs[], nbtMarkers[])")
+        @Config.Comment("Only announce kills of announced mobs (bosses, Blights, named, mobs[], nbtMarkers[])")
         public boolean requireAnnounced = true;
 
         @Config.Comment("Shooter-only action bar distance for any qualifying arrow kill that is not announced")
@@ -103,8 +106,8 @@ public final class PatchesConfig {
         @Config.Comment("Follow-up for a player killed by a player (needs gamerule showDeathMessages)")
         public boolean playerKills = true;
 
-        @Config.Comment("Follow-up for announced mobs killed by a player: bosses, named mobs, and the "
-                + "trickshots.mobs / trickshots.nbtMarkers lists (e.g. Blights)")
+        @Config.Comment("Follow-up for announced mobs killed by a player: bosses, Blights, named mobs, and the "
+                + "trickshots.mobs / trickshots.nbtMarkers lists")
         public boolean announcedMobKills = true;
 
         @Config.Comment("Shot distance for bow/crossbow kills")
