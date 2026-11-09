@@ -16,6 +16,7 @@ import io.github.tidefox.dregorapatches.combat.DebugProbe;
 import io.github.tidefox.dregorapatches.core.DregoraPatchesPlugin;
 import io.github.tidefox.dregorapatches.diag.ChunkLoadTracer;
 import io.github.tidefox.dregorapatches.levelup2.FurnaceScan;
+import io.github.tidefox.dregorapatches.lycanites.PetRecall;
 import io.github.tidefox.dregorapatches.mixinsupport.MixinState;
 import io.github.tidefox.dregorapatches.nc.DpNcTile;
 import io.github.tidefox.dregorapatches.nc.FrozenTypes;
@@ -38,13 +39,13 @@ import net.minecraftforge.common.config.Config;
 import net.minecraftforge.common.config.ConfigManager;
 
 /**
- * {@code /dpatch} (op): {@code mixins}, {@code nc stats}, {@code levelup2 stats}, {@code chunkloads <seconds>},
+ * {@code /dpatch} (op): {@code mixins}, {@code nc stats}, {@code levelup2 stats}, {@code lycanites stats}, {@code chunkloads <seconds>},
  * {@code reload}, {@code debug damage [n]}, {@code debug kill [n]}, {@code debug off}.
  * All text is literal: clients do not have our lang file.
  */
 public class CmdDpatch extends CommandBase {
 
-    private static final String USAGE = "/dpatch mixins | nc stats | levelup2 stats | chunkloads <seconds> | reload"
+    private static final String USAGE = "/dpatch mixins | nc stats | levelup2 stats | lycanites stats | chunkloads <seconds> | reload"
             + " | debug damage [n] | debug kill [n] | debug off";
 
     @Override
@@ -70,6 +71,8 @@ public class CmdDpatch extends CommandBase {
             for (String l : ncStats(server)) send(sender, l);
         } else if (args.length == 2 && "levelup2".equals(args[0]) && "stats".equals(args[1])) {
             levelup2Stats(sender);
+        } else if (args.length == 2 && "lycanites".equals(args[0]) && "stats".equals(args[1])) {
+            lycanitesStats(sender);
         } else if (args.length == 2 && "chunkloads".equals(args[0])) {
             int s = parseInt(args[1], 1, 3600);
             if (ChunkLoadTracer.start(sender, s)) {
@@ -120,6 +123,7 @@ public class CmdDpatch extends CommandBase {
                 {DregoraPatchesPlugin.CONFIG_VANILLA, "vanilla"},
                 {DregoraPatchesPlugin.CONFIG_NC, "nc"},
                 {DregoraPatchesPlugin.CONFIG_LEVELUP2, "levelup2"},
+                {DregoraPatchesPlugin.CONFIG_LYCANITES, "lycanites"},
         };
         Map<String, Set<String>> applied = MixinState.snapshot();
         int total = 0;
@@ -201,6 +205,14 @@ public class CmdDpatch extends CommandBase {
         for (String l : FurnaceScan.stats()) send(sender, " " + l);
     }
 
+    private static void lycanitesStats(ICommandSender sender) {
+        boolean applied = MixinState.isApplied("lycanites.MixinPetEntry");
+        send(sender, TextFormatting.GOLD + "Lycanites pet recall" + TextFormatting.RESET
+                + " - fix " + onOff(PatchesConfig.lycanites.petRecallFix) + ", patched " + yn(applied));
+        if (!applied) return;
+        send(sender, " unloaded pets recalled: " + PetRecall.recalledCount() + ", respawn failed: " + PetRecall.failedCount());
+    }
+
     private static void send(ICommandSender sender, String text) {
         sender.sendMessage(new TextComponentString(text));
     }
@@ -209,12 +221,12 @@ public class CmdDpatch extends CommandBase {
     public List<String> getTabCompletions(MinecraftServer server, ICommandSender sender, String[] args,
             @Nullable BlockPos targetPos) {
         if (args.length == 1) {
-            return getListOfStringsMatchingLastWord(args, "mixins", "nc", "levelup2", "chunkloads", "reload", "debug");
+            return getListOfStringsMatchingLastWord(args, "mixins", "nc", "levelup2", "lycanites", "chunkloads", "reload", "debug");
         }
         if (args.length == 2 && "debug".equals(args[0])) {
             return getListOfStringsMatchingLastWord(args, "damage", "kill", "off");
         }
-        if (args.length == 2 && ("nc".equals(args[0]) || "levelup2".equals(args[0]))) {
+        if (args.length == 2 && ("nc".equals(args[0]) || "levelup2".equals(args[0]) || "lycanites".equals(args[0]))) {
             return getListOfStringsMatchingLastWord(args, "stats");
         }
         return Collections.emptyList();

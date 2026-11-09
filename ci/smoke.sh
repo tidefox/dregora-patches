@@ -7,7 +7,7 @@
 #
 # usage: ci/smoke.sh <server-dir> <dregorapatches.jar> <fermiumbooter.jar> [patched-mod.jar ...]
 #   <server-dir> must contain an installed Forge server (forge-*.jar + libraries/).
-#   patched mods: NuclearCraft 2.19a and Level Up! 2 1.1.23 (the server's jars).
+#   patched mods: NuclearCraft 2.19a, Level Up! 2 1.1.23 and Lycanites Mobs 2.0.8.10 (the server's jars).
 set -uo pipefail
 
 # Resolve everything to absolute paths before we cd into the server dir.
@@ -85,6 +85,8 @@ if wait_for 'Done \([0-9.]+s\)! For help' "$BOOT_TIMEOUT"; then
   wait_for 'guard: [0-9]+ chunk load' 60 || status=1
   echo "dpatch levelup2 stats" >&3
   wait_for 'Level Up! 2 furnace scan' 60 || status=1
+  echo "dpatch lycanites stats" >&3
+  wait_for 'Lycanites pet recall' 60 || status=1
   echo "reactor admin list" >&3
   wait_for '\[Reactor\] No claimed reactors' 60 || status=1
   echo "dpatch chunkloads 2" >&3
@@ -121,6 +123,8 @@ require 'mixins\.dregorapatches\.levelup2\.json' "FermiumBooter saw the Level Up
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.vanilla' "Mixin loaded the early (vanilla) config"
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.nc' "Mixin loaded the NC late config"
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.levelup2' "Mixin loaded the Level Up! 2 late config"
+require 'mixins\.dregorapatches\.lycanites\.json' "FermiumBooter saw the Lycanites late config"
+require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.lycanites' "Mixin loaded the Lycanites late config"
 require '\[dregorapatches\]: Dregora Patches .* ready' "dregorapatches started"
 require '\[dregorapatches\]: /dpatch mixins:' "/dpatch mixins ran"
 require '\[dregorapatches\]: Config reloaded' "/dpatch reload ran"
@@ -130,8 +134,9 @@ require 'Stopping server' "server stopped cleanly"
 if [ "$mods_in" = 1 ]; then
   require 'patched: tick wrapper yes, NCTile yes, radiation scope yes, chunk guard yes' "/dpatch nc stats: all NC hooks patched"
   require 'Level Up! 2 furnace scan - fix on, patched yes' "/dpatch levelup2 stats: patched"
+  require 'Lycanites pet recall - fix on, patched yes' "/dpatch lycanites stats: patched"
   require 'dim 0: .*port [0-9]+ frozen' "/dpatch nc stats: placed port is frozen"
-  cfgs="vanilla nc levelup2"
+  cfgs="vanilla nc levelup2 lycanites"
 else
   require 'Mixin skipped \(target not installed\): .*MixinNCTile' "NC mixin skipped without NuclearCraft"
   cfgs="vanilla"

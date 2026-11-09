@@ -74,6 +74,7 @@ dependencies {
     if (project.levelup2_file_id?.trim()) {
         compileOnly rfg.deobf("curse.maven:levelup2-${project.levelup2_project_id}:${project.levelup2_file_id}")
     }
+    compileOnly rfg.deobf("curse.maven:lycanitesmobs-${project.lycanites_project_id}:${project.lycanites_file_id}")
     // Fallback for jars that are not on CurseMaven (e.g. Level Up! 2): drop them into libs/.
     fileTree(dir: 'libs', include: '*.jar').each { File f ->
         compileOnly rfg.deobf(files(f))
