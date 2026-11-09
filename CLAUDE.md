@@ -19,6 +19,7 @@ docs/08-levelup2-furnace-scan.md  Patches P1 (steady 2.3 ms/tick)
 docs/06-trick-shots.md       feature P2
 docs/03-killfeed.md          feature P3 (code done)
 docs/handoff/friendly-fire-rework.md  spec for the separate friendly-fire repo — not built here
+docs/handoff/client-quirks.md         spec for a separate client-side fixes mod (Mac Ctrl+Q, audio device, Cmd+Q) — not built here
 docs/ideas/                  parked — do not build unless asked
 docs/reference/handoff-nc-fission-lag.md   original lag investigation (server paths, spark/rcon commands)
 docs/reference/pack-mods.txt               exact mod jars on the server (pack-mods-client.txt: client)
