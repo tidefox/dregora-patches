@@ -1,0 +1,4 @@
+# Extended regexes (one per line) for a log line that starts a known-harmless block:
+# the line itself and the stack trace right under it (Caused by / at / ... lines) are ignored.
+# Lycanites Mobs 2.0.8.10, fresh config: recipe for an item disabled in its default config
+\[FML\]: Parsing error loading recipe lycanitesmobs:belpharm_break

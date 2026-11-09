@@ -149,7 +149,17 @@ for cfg in $cfgs; do
 done
 
 # Errors: mixin failures, ERROR/FATAL log lines, any exception text. Known-harmless lines are allow-listed.
-BAD=$(grep -nE 'Mixin(Apply|Transformer)Error|InvalidMixinException|InvalidInjectionException|InvalidAccessorException|Mixin apply.*failed|/(ERROR|FATAL)\]|Exception|^\s+at [a-zA-Z_$]' "$ALL" \
+# Known-harmless blocks (ci/log-block-allowlist.txt): drop the header line and the stack trace under it.
+FILTERED=$(mktemp)
+awk -v listf="$HERE/log-block-allowlist.txt" '
+  BEGIN { while ((getline l < listf) > 0) if (l !~ /^#/ && l != "") pats[n++] = l }
+  {
+    if (skip && ($0 ~ /^[[:space:]]+(at |\.\.\. )/ || $0 ~ /^Caused by: / || $0 ~ /^[a-zA-Z_$][a-zA-Z0-9_$.]*(Exception|Error)(: |$)/)) next
+    skip = 0
+    for (i = 0; i < n; i++) if ($0 ~ pats[i]) { skip = 1; next }
+    print
+  }' "$ALL" > "$FILTERED"
+BAD=$(grep -nE 'Mixin(Apply|Transformer)Error|InvalidMixinException|InvalidInjectionException|InvalidAccessorException|Mixin apply.*failed|/(ERROR|FATAL)\]|Exception|^\s+at [a-zA-Z_$]' "$FILTERED" \
       | grep -vEf "$HERE/log-allowlist.txt" || true)
 if [ -n "$BAD" ]; then
   echo "::error::problems found in server log:"
