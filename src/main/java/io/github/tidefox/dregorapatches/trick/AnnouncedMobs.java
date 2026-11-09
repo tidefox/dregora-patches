@@ -19,12 +19,18 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.ResourceLocation;
 
 /**
- * "Is this mob announce-worthy?" from vanilla data only (docs/06 §2.2): boss flag, custom name,
- * registry whitelist, NBT markers. No other mod's classes.
+ * "Is this mob announce-worthy?" from vanilla data only (docs/06 §2.2): boss flag, Scaling Health
+ * Blight flag (read from ForgeData), custom name, registry whitelist, NBT markers. No other mod's classes.
  */
 public final class AnnouncedMobs {
 
-    public enum Reason { BOSS, NAMED, WHITELIST, NBT_MARKER }
+    public enum Reason { BOSS, BLIGHT, NAMED, WHITELIST, NBT_MARKER }
+
+    /**
+     * Scaling Health's Blight flag: a boolean in the entity's ForgeData
+     * ({@code BlightHandler.isBlight}, verified against ScalingHealth-1.12.2-1.3.42+147).
+     */
+    static final String BLIGHT_KEY = "ScalingHealth.IsBlight";
 
     private static String[] mobsSrc, markersSrc;
     private static Set<String> mobs = new HashSet<>();
@@ -48,7 +54,7 @@ public final class AnnouncedMobs {
         }
     }
 
-    /** Uncached. Rules 1–3 are cheap; rule 4 serializes the entity, so it runs last. */
+    /** Uncached. Rules 1–3 (and the Blight flag) are cheap; rule 4 serializes the entity, so it runs last. */
     @Nullable
     public static Reason evaluate(EntityLivingBase e) {
         if (e instanceof EntityPlayer) {
@@ -57,6 +63,9 @@ public final class AnnouncedMobs {
         refreshConfig();
         if (!e.isNonBoss()) {
             return Reason.BOSS;
+        }
+        if (PatchesConfig.trickshots.blights && e.getEntityData().getBoolean(BLIGHT_KEY)) {
+            return Reason.BLIGHT;
         }
         if (e.hasCustomName()) {
             return Reason.NAMED;
