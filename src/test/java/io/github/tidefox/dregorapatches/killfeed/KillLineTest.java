@@ -20,4 +20,16 @@ class KillLineTest {
     void nothingKnown() {
         assertEquals("", KillLine.tail(Double.NaN, Double.NaN, -1));
     }
+
+    @Test
+    void stripRemovesFormattingCodes() {
+        assertEquals("Blight Xaphan Lvl 4", KillLine.strip("\u00a7cBlight \u00a7rXaphan Lvl 4 "));
+    }
+
+    @Test
+    void ownLineVerbs() {
+        assertEquals(" was slain by Alice", KillLine.verb(KillCredit.Kind.DIRECT, "Alice", null));
+        assertEquals(" was slain by Alice's Wolf", KillLine.verb(KillCredit.Kind.PET, "Alice", "Wolf"));
+        assertEquals(" died fighting Alice", KillLine.verb(KillCredit.Kind.LINGERING, "Alice", null));
+    }
 }

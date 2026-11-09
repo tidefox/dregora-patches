@@ -123,7 +123,7 @@ public final class TrickShotListener {
             if (server != null) {
                 Chat.broadcast(server, msg);
             } else {
-                shooter.sendMessage(msg);
+                Chat.send(shooter, msg);
             }
             return;
         }
@@ -135,7 +135,7 @@ public final class TrickShotListener {
             if (c.scope == PatchesConfig.Scope.RADIUS && p.getDistanceSq(shooter) > r2) {
                 continue;
             }
-            p.sendMessage(msg);
+            Chat.send(p, msg);
         }
     }
 }

@@ -40,7 +40,7 @@ public final class DebugProbe {
 
     public static final DebugProbe INSTANCE = new DebugProbe();
 
-    private int damageLeft, killLeft;
+    private int damageLeft, killLeft, feedLeft;
     @Nullable
     private UUID damageTo, killTo;
 
@@ -73,12 +73,14 @@ public final class DebugProbe {
 
     public void armKill(int n, @Nullable UUID to) {
         killLeft = n;
+        feedLeft = n;
         killTo = to;
     }
 
     public void off() {
         damageLeft = 0;
         killLeft = 0;
+        feedLeft = 0;
         traces.clear();
     }
 
@@ -194,6 +196,22 @@ public final class DebugProbe {
         report(sb.toString(), killTo);
     }
 
+    // ---- kill feed decisions -------------------------------------------------------------
+
+    /** Armed by {@code debug kill}: the next n kill-feed decisions (any player-credited death). */
+    public boolean killFeedArmed() {
+        return feedLeft > 0;
+    }
+
+    /** Why the kill feed did (not) add a line for a kill: matched chat line, own line, or nothing. */
+    public void killFeed(String kill, String decision) {
+        if (feedLeft <= 0) {
+            return;
+        }
+        feedLeft--;
+        report("[dp debug killfeed] " + kill + ": " + decision, killTo);
+    }
+
     // ---- helpers -----------------------------------------------------------------------
 
     private static String describe(@Nullable Entity e) {
@@ -234,7 +252,7 @@ public final class DebugProbe {
         EntityPlayerMP p = server.getPlayerList().getPlayerByUUID(to);
         if (p != null) {
             for (String line : text.split("\n")) {
-                p.sendMessage(Chat.text(line, TextFormatting.GRAY));
+                Chat.send(p, Chat.text(line, TextFormatting.GRAY));
             }
         }
     }

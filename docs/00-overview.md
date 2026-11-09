@@ -33,7 +33,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 
 ## Observer rules (features: `trick/`, `killfeed/`, `combat/`)
 1. **Passive observer**: subscribe at `EventPriority.LOWEST`, `receiveCanceled = false`; never cancel or modify an event. `/dpatch debug` listeners use `receiveCanceled = true` (read-only, only while armed).
-2. **No reflection into, no imports of** other mods' classes, and no mixins. Detect special mobs through vanilla data (`06 §2.2 AnnouncedMobs`).
+2. **No reflection into, no imports of** other mods' classes, and no mixins. Detect special mobs through vanilla data (`06 §2.2 AnnouncedMobs`). One exception: the kill feed reads chat lines through `killfeed/ChatTap`, fed by two read-only vanilla hooks (`mixin/vanilla/MixinPlayerList`, `MixinEntityPlayerMP`: HEAD injects that only copy the text; `03 §2.5`). Without them it falls back to the static rules.
 3. Vanilla/Forge clients without the jar must connect fine (`acceptableRemoteVersions = "*"`). All output is vanilla chat components (hover `SHOW_ITEM` / `SHOW_ENTITY`, click `RUN_COMMAND`), literal text.
 4. Chat component JSON must stay < 32767 chars (`SPacketChat` limit kicks the receiver) — trim item NBT in hovers when needed.
 5. First Aid 1.6.22 cancels every player `LivingHurtEvent` at LOWEST, so `LivingDamageEvent` doesn't fire for player victims. Anything that reads damage *to players* must read the hurt at `LOW` (`handoff/friendly-fire-rework.md §0.1`). Damage to mobs is unaffected.

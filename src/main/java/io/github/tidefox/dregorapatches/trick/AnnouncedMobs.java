@@ -20,7 +20,8 @@ import net.minecraft.util.ResourceLocation;
 
 /**
  * "Is this mob announce-worthy?" from vanilla data only (docs/06 §2.2): boss flag, Scaling Health
- * Blight flag (read from ForgeData), custom name, registry whitelist, NBT markers. No other mod's classes.
+ * Blight flag (read from ForgeData), custom name, registry whitelist ({@code trickshots.mobs} +
+ * {@code killfeed.announceMobs}), NBT markers. No other mod's classes.
  */
 public final class AnnouncedMobs {
 
@@ -32,7 +33,7 @@ public final class AnnouncedMobs {
      */
     static final String BLIGHT_KEY = "ScalingHealth.IsBlight";
 
-    private static String[] mobsSrc, markersSrc;
+    private static String[] mobsSrc, killfeedMobsSrc, markersSrc;
     private static Set<String> mobs = new HashSet<>();
     private static List<NbtMarker> markers = NbtMarker.parseAll(new String[0]);
 
@@ -43,9 +44,13 @@ public final class AnnouncedMobs {
 
     private static void refreshConfig() {
         String[] m = PatchesConfig.trickshots.mobs;
-        if (m != mobsSrc) {
+        String[] k = PatchesConfig.killfeed.announceMobs;
+        if (m != mobsSrc || k != killfeedMobsSrc) {
             mobsSrc = m;
-            mobs = new HashSet<>(Arrays.asList(m));
+            killfeedMobsSrc = k;
+            Set<String> set = new HashSet<>(Arrays.asList(m));
+            set.addAll(Arrays.asList(k)); // killfeed.announceMobs (Ice and Fire dragons, …) count too
+            mobs = set;
         }
         String[] n = PatchesConfig.trickshots.nbtMarkers;
         if (n != markersSrc) {
