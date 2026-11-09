@@ -3,6 +3,7 @@ package io.github.tidefox.dregorapatches.util;
 import javax.annotation.Nullable;
 
 import io.github.tidefox.dregorapatches.DregoraPatches;
+import io.github.tidefox.dregorapatches.killfeed.ChatTap;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityList;
 import net.minecraft.entity.player.EntityPlayerMP;
@@ -122,11 +123,22 @@ public final class Chat {
         return plain;
     }
 
+    /** Our own lines: the kill feed's chat tap skips them (docs/03 §2.5). */
     public static void send(EntityPlayerMP player, ITextComponent c) {
-        player.sendMessage(c);
+        ChatTap.ours();
+        try {
+            player.sendMessage(c);
+        } finally {
+            ChatTap.done();
+        }
     }
 
     public static void broadcast(MinecraftServer server, ITextComponent c) {
-        server.getPlayerList().sendMessage(c);
+        ChatTap.ours();
+        try {
+            server.getPlayerList().sendMessage(c);
+        } finally {
+            ChatTap.done();
+        }
     }
 }

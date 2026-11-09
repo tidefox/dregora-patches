@@ -10,6 +10,23 @@ public final class KillLine {
 
     private KillLine() {}
 
+    /** Removes {@code §x} formatting codes and trims. */
+    public static String strip(String s) {
+        return s == null ? "" : s.replaceAll("(?i)\u00a7[0-9a-fk-or]", "").trim();
+    }
+
+    /** Our own kill line after the victim's name (docs/03 §2.5). */
+    public static String verb(KillCredit.Kind kind, String killer, String pet) {
+        switch (kind) {
+            case PET:
+                return " was slain by " + killer + "'s " + pet;
+            case LINGERING:
+                return " died fighting " + killer;
+            default:
+                return " was slain by " + killer;
+        }
+    }
+
     /**
      * @param distance blocks from the shot's origin, or NaN (not a tagged shot / hidden)
      * @param finalHit damage of the killing hit, or NaN (unknown / hidden)

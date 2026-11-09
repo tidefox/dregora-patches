@@ -1,6 +1,7 @@
 package io.github.tidefox.dregorapatches.killfeed;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -34,5 +35,14 @@ class FightTest {
         assertEquals(-1, f.duration(10, TIMEOUT));
         f.hit(10, 4, TIMEOUT);
         assertTrue(Float.isNaN(f.finalHit(11)));
+    }
+
+    @Test
+    void recentAttackerWithinWindow() {
+        Fight f = new Fight();
+        f.hit(100, 5, TIMEOUT, "alice");
+        f.hit(150, 5, TIMEOUT, "bob");
+        assertEquals("bob", f.recentAttacker(250, 200));
+        assertNull(f.recentAttacker(351, 200));
     }
 }

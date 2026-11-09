@@ -106,9 +106,42 @@ public final class PatchesConfig {
         @Config.Comment("Follow-up for a player killed by a player (needs gamerule showDeathMessages)")
         public boolean playerKills = true;
 
+        @Config.Comment({"Follow-up under any kill line already in chat (vanilla, Scaling Health, any mod): the server's",
+                "system messages are watched and a line naming the dead mob/player gets the follow-up.",
+                "Off (or the hook missing): only player kills and announcedMobKills get one, as before."})
+        public boolean followPackLines = true;
+
         @Config.Comment("Follow-up for announced mobs killed by a player: bosses, Blights, named mobs, and the "
                 + "trickshots.mobs / trickshots.nbtMarkers lists")
         public boolean announcedMobKills = true;
+
+        @Config.Comment({"Notable mobs killed by a player get our own kill line when nothing else announced them:",
+                "  [Fire Dragon] was slain by Alice",
+                "    -> with [weapon] · ...",
+                "Notable = boss, Blight, announceMobs, trickshots.mobs/nbtMarkers, announceMinMaxHealth (and named mobs with announceNamed)."})
+        public boolean announceUnannounced = true;
+
+        @Config.Comment("Registry ids that are notable (also count for trick shots). /dpatch debug kill prints a mob's id.")
+        public String[] announceMobs = {"iceandfire:firedragon", "iceandfire:icedragon", "iceandfire:lightningdragon",
+                "iceandfire:seaserpent"};
+
+        @Config.Comment("Any mob with at least this max health is notable. 0 = off.")
+        @Config.RangeDouble(min = 0, max = 1000000)
+        public double announceMinMaxHealth = 0;
+
+        @Config.Comment("Mobs with a custom name are notable (off: Lycanites/name-tagged mobs would spam chat)")
+        public boolean announceNamed = false;
+
+        @Config.Comment("Kills by a player's tamed mob (wolf, dragon, …) credit the owner")
+        public boolean petKills = true;
+
+        @Config.Comment("A death within this many seconds of a player's last hit (fire, bleeding, fall) credits that player. 0 = off.")
+        @Config.RangeInt(min = 0, max = 60)
+        public int lingerCreditSec = 10;
+
+        @Config.Comment("Ticks to wait for another mod's kill line before deciding nothing announced the kill")
+        @Config.RangeInt(min = 0, max = 100)
+        public int lineWaitTicks = 2;
 
         @Config.Comment("Shot distance for bow/crossbow kills")
         public boolean showDistance = true;
