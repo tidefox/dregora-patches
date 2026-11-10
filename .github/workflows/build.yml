@@ -17,6 +17,9 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      # Artifact name = release jar's base name, e.g. dregorapatches-0.2.0 (version from gradle.properties).
+      artifact: ${{ steps.pick.outputs.artifact }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,12 +39,14 @@ jobs:
         run: ./gradlew build --stacktrace -Porg.gradle.java.installations.fromEnv=JAVA_HOME_8_X64
 
       - name: Pick and check release jar
+        id: pick
         run: |
           set -euo pipefail
           mkdir -p dist
           dp=$(ls build/libs/dregorapatches-*.jar | grep -vE -- '-(dev|sources|javadoc)\.jar$' | head -1)
           [ -n "$dp" ] || { echo "::error::release jar missing"; exit 1; }
           cp "$dp" dist/
+          echo "artifact=$(basename "$dp" .jar)" >> "$GITHUB_OUTPUT"
 
           # Listings are captured first: "unzip | grep -q" fails under pipefail when grep exits early (SIGPIPE).
           dpl=$(unzip -l "$dp"); dpm=$(unzip -p "$dp" META-INF/MANIFEST.MF | tr -d '\r\n ')
@@ -67,7 +72,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: jars
+          name: ${{ steps.pick.outputs.artifact }}
           path: dist/*.jar
           if-no-files-found: error
 
@@ -126,7 +131,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: jars
+          name: ${{ needs.build.outputs.artifact }}
           path: smoke/dist
 
       - name: Boot server (both jar orders + without patched mods), /dpatch, /reactor, /trickshots, stop
@@ -158,7 +163,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: jars
+          name: ${{ needs.build.outputs.artifact }}
           path: dist
       - uses: softprops/action-gh-release@v2
         with:
