@@ -505,7 +505,7 @@ public final class KillFeedListener {
                 args[1] = new TextComponentString(p.credit.player.getName() + "'s " + plain(p.credit.pet.getDisplayName()));
             }
             if (t.getKey().endsWith(".item") && args.length > 2 && !p.weapon.isEmpty()) {
-                args[2] = Chat.icon(p.weapon); // vanilla names the item in hand; ours is the launcher
+                args[2] = weapon(p.weapon); // vanilla names the item in hand; ours is the launcher
                 weaponShown = true;
             }
             TextComponentTranslation n = new TextComponentTranslation(t.getKey(), args);
@@ -516,7 +516,7 @@ public final class KillFeedListener {
         root.appendSibling(death);
         if (!weaponShown && !p.weapon.isEmpty()) {
             root.appendSibling(new TextComponentString(" using"));
-            root.appendSibling(Chat.icon(p.weapon));
+            root.appendSibling(weapon(p.weapon));
         }
         if (p.credit.kind == KillCredit.Kind.LINGERING
                 && !plain(death).toLowerCase(Locale.ROOT).contains(p.credit.player.getName().toLowerCase(Locale.ROOT))) {
@@ -530,6 +530,13 @@ public final class KillFeedListener {
             root.appendSibling(Chat.hoverText(" · " + Fmt.duration(p.fightTicks), fightInfo(p), TextFormatting.GRAY));
         }
         return root;
+    }
+
+    /** {@code 🗡[Name]}: Quark's icon + the name in the item's rarity color, italic if renamed (as vanilla). */
+    private static ITextComponent weapon(ItemStack stack) {
+        ITextComponent c = Chat.item(stack, stack.getRarity().color);
+        c.getStyle().setItalic(stack.hasDisplayName());
+        return c;
     }
 
     private static ITextComponent victimName(Pending p, Badges b) {

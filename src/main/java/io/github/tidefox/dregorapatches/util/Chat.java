@@ -75,13 +75,6 @@ public final class Chat {
         return c;
     }
 
-    /** Just the item's icon (Quark) with its tooltip on hover; blanks on clients without Quark. */
-    public static ITextComponent icon(ItemStack stack) {
-        TextComponentString c = new TextComponentString("   ");
-        c.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new TextComponentString(itemNbt(stack))));
-        return c;
-    }
-
     public static ITextComponent item(ItemStack stack, TextFormatting color) {
         return item(stack.getDisplayName(), itemNbt(stack), color);
     }
