@@ -158,6 +158,7 @@ public class CmdDpatch extends CommandBase {
         out.add(" patched: tick wrapper " + yn(MixinState.isApplied("vanilla.MixinWorld"))
                 + ", NCTile " + yn(MixinState.isApplied("nc.MixinNCTile"))
                 + ", radiation scope " + yn(MixinState.isApplied("nc.MixinRadiationHandler"))
+                + ", scrubber removal " + yn(MixinState.isApplied("nc.MixinRadiationEnvironmentHandler"))
                 + ", chunk guard " + yn(MixinState.isApplied("vanilla.MixinChunkProviderServer")));
         // dim → label → {frozen, ticking}
         Map<Integer, Map<String, int[]>> byDim = new TreeMap<Integer, Map<String, int[]>>();

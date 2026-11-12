@@ -343,3 +343,12 @@ NC is 17 of 106: an unfrozen buffer and radiation reading neighbour inventories 
 - Top cost now is mobs: `com.Fishmod` (mod_LavaCow) 5.5 % self, `com.charles445` (RLTweaker/AI Reducer/SimpleDifficulty) 4.8 %, Lycanites 4.0 %. Out of scope.
 
 **Acceptance (§4.3), step 2:** no 45 s spikes ✔ (max 397 ms = autosave); `TileFissionPort` < 0.5 % ✔; NC callers in the `loadChunk` table: 240 ms / 30 min left (radiation, one buffer) → step 3; `doFurnaceTicks` < 0.1 % ✗ — 0.44 %, see `08 §4`.
+
+### 4.8 Scrubber removal spikes (2026-11-12)
+Owner: spikes came back after 2–3 players explored and returned to base; they stayed after everyone was home.
+- 54 min unfiltered (`WSIKZHCREG`): `Chunk.setTileEntity → TileRadiationScrubber.invalidate → RadiationEnvironmentHandler.removeTile` = **255 s, 7.9 %** (was 34 s / 2.0 % in §1).
+- 2 min, ticks > 100 ms only (`PsSJLz66DD`, 34 ticks): the same path = **68 %** of slow-tick time, plus 12 % `ArrayList.contains` (vanilla `loadedTileEntityList.contains` → the scrubber's `equals`, which allocates a `FourPos`). The rest is NC neighbour-push chunk loads.
+- Cause (NC 2.19a source): `onAdded` registers each scrubber under every key of its (2r+1)³ cube (r = `radiation_scrubber_radius`, default 4 → 729 keys). `removeTile` scans **every** entry of `ENVIRONMENT` + `ENVIRONMENT_BACKUP`. Entries are never pruned on chunk unload, so the maps grow with every scrubber loaded since the last restart, and so does the cost. That's why it stays after players come home. Removal fires whenever a chunk loads during TE ticking: the TEs are re-added and vanilla `Chunk.addTileEntity` invalidates the TE already at that position, which is the same object.
+- Fix: `mixin/nc/MixinRadiationEnvironmentHandler` replaces `removeTile` for scrubbers with lookups of the 729 cube keys in both maps. The result is the same, because `addToTileMap` only ever adds within that cube and dimension. Other `ITileRadiationEnvironment` implementers (none in 2.19a) keep the full scan. Shown as `scrubber removal` in `/dpatch nc stats`.
+- Not fixed (smaller): the map leak itself; the `equals` allocation in `ArrayList.contains`.
+- ⚠ verify live: `--only-ticks-over 100` after an explore-and-return session; `removeTile` should drop out of the tree.

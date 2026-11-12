@@ -132,7 +132,7 @@ require 'Logging the next 1 deaths caused by a player' "/dpatch debug kill ran"
 require 'No trick shots yet' "/trickshots read the (empty) records"
 require 'Stopping server' "server stopped cleanly"
 if [ "$mods_in" = 1 ]; then
-  require 'patched: tick wrapper yes, NCTile yes, radiation scope yes, chunk guard yes' "/dpatch nc stats: all NC hooks patched"
+  require 'patched: tick wrapper yes, NCTile yes, radiation scope yes, scrubber removal yes, chunk guard yes' "/dpatch nc stats: all NC hooks patched"
   require 'Level Up! 2 furnace scan - fix on, patched yes' "/dpatch levelup2 stats: patched"
   require 'Lycanites pet recall - fix on, patched yes' "/dpatch lycanites stats: patched"
   require 'dim 0: .*port [0-9]+ frozen' "/dpatch nc stats: placed port is frozen"
