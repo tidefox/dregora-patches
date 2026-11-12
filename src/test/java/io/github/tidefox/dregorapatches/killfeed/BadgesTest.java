@@ -4,15 +4,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import net.minecraft.util.text.TextFormatting;
+
 class BadgesTest {
 
     @Test
     void infernalRanksMatchInfernalMobs() {
-        assertEquals("Rare", Badges.infernalRank(1));
-        assertEquals("Rare", Badges.infernalRank(5));
-        assertEquals("Ultra", Badges.infernalRank(6));
-        assertEquals("Ultra", Badges.infernalRank(10));
-        assertEquals("Infernal", Badges.infernalRank(11));
+        assertEquals(1, Badges.infernalRank(1));
+        assertEquals(1, Badges.infernalRank(5));
+        assertEquals(2, Badges.infernalRank(6));
+        assertEquals(2, Badges.infernalRank(10));
+        assertEquals(3, Badges.infernalRank(11));
+        assertEquals("Ultra", Badges.infernalName(2));
+        assertEquals(TextFormatting.YELLOW, Badges.infernalColor(2));
+    }
+
+    @Test
+    void championColorsFollowThePackRanks() {
+        assertEquals(TextFormatting.YELLOW, Badges.championColor(1));
+        assertEquals(TextFormatting.AQUA, Badges.championColor(3));
+        assertEquals(TextFormatting.RED, Badges.championColor(5));
+        assertEquals(TextFormatting.RED, Badges.championColor(7));
     }
 
     @Test

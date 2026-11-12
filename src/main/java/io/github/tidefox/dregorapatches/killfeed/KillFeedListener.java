@@ -548,8 +548,10 @@ public final class KillFeedListener {
         if (!fight.isEmpty()) {
             hover.append('\n').append(fight);
         }
-        TextComponentString c = Chat.text(b.prefix + plain(p.victim.getDisplayName()), b.color);
+        TextComponentString c = new TextComponentString(""); // badges keep their colors, all share the hover
         c.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TextComponentString(hover.toString())));
+        c.appendSibling(b.prefix);
+        c.appendSibling(Chat.text(plain(p.victim.getDisplayName()), b.color));
         return c;
     }
 
