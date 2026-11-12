@@ -33,7 +33,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 2. Every patch has a config switch and a `/dpatch … stats` view.
 
 ## Observer rules (features: `trick/`, `killfeed/`, `combat/`)
-1. **Passive observer**: subscribe at `EventPriority.LOWEST`, `receiveCanceled = false`; never cancel or modify an event. `/dpatch debug` listeners use `receiveCanceled = true` (read-only, only while armed).
+1. **Passive observer**: subscribe at `EventPriority.LOWEST`, `receiveCanceled = false`; never cancel or modify an event. Exception (owner, 2026-11-12): the kill feed may replace a kill line it matched with its own one-line version, always sending the original on failure (`03 §2.6`). `/dpatch debug` listeners use `receiveCanceled = true` (read-only, only while armed).
 2. **No reflection into, no imports of** other mods' classes, and no mixins. Detect special mobs through vanilla data (`06 §2.2 AnnouncedMobs`). One exception: the kill feed reads chat lines through `killfeed/ChatTap`, fed by two read-only vanilla hooks (`mixin/vanilla/MixinPlayerList`, `MixinEntityPlayerMP`: HEAD injects that only copy the text; `03 §2.5`). Without them it falls back to the static rules.
 3. Vanilla/Forge clients without the jar must connect fine (`acceptableRemoteVersions = "*"`). All output is vanilla chat components (hover `SHOW_ITEM` / `SHOW_ENTITY`, click `RUN_COMMAND`), literal text.
 4. Chat component JSON must stay < 32767 chars (`SPacketChat` limit kicks the receiver) — trim item NBT in hovers when needed.
