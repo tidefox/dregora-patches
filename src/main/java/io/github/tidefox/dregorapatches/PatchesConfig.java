@@ -148,6 +148,10 @@ public final class PatchesConfig {
         @Config.RangeInt(min = 0, max = 5)
         public int dragonMinStage = 3;
 
+        @Config.Comment("SRParasites evolution phase (0-8, the phase a parasite was born in) from which it is elite. 0 = off.")
+        @Config.RangeInt(min = 0, max = 100)
+        public int srpMinPhase = 6;
+
         @Config.Comment("Kills by a player's tamed mob (wolf, dragon, …) credit the owner")
         public boolean petKills = true;
 
