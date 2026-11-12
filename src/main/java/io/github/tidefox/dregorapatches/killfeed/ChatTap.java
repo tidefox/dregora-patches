@@ -1,47 +1,53 @@
 package io.github.tidefox.dregorapatches.killfeed;
 
+import javax.annotation.Nullable;
+
 import io.github.tidefox.dregorapatches.PatchesConfig;
 import io.github.tidefox.dregorapatches.mixinsupport.MixinState;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.text.ITextComponent;
 import net.minecraft.util.text.TextFormatting;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 
 /**
- * Sees every system chat line the server sends (death messages, Scaling Health's Blight line, any
- * mod's announcement), so the kill feed can follow whatever the pack actually announced instead of
- * guessing from a fixed list (docs/03 §2.5). Fed by two read-only vanilla hooks,
+ * Sees every system chat line the server sends (death messages, Scaling Health's Blight line,
+ * Champions' line, any mod's announcement). A line that is the kill line of a pending kill is held
+ * back and replaced by the kill feed's own line at tick end (docs/03 §2.6). Fed by two vanilla hooks,
  * {@code mixin/vanilla/MixinPlayerList} and {@code MixinEntityPlayerMP}; player chat is not seen.
  * Our own lines are skipped ({@link #ours()}).
  */
 public final class ChatTap {
 
-    public static final ChatLines LINES = new ChatLines();
+    @Nullable
+    static KillFeedListener sink;
 
     private static int ours;
 
     private ChatTap() {}
 
-    /** True when the hooks applied and {@code killfeed.followPackLines} is on. */
+    /** True when the hooks applied: without them the kill feed can't replace lines and stays off. */
     public static boolean live() {
-        return PatchesConfig.killfeed.followPackLines
-                && (MixinState.isApplied("vanilla.MixinPlayerList") || MixinState.isApplied("vanilla.MixinEntityPlayerMP"));
+        return MixinState.isApplied("vanilla.MixinPlayerList") || MixinState.isApplied("vanilla.MixinEntityPlayerMP");
     }
 
-    /** Called from the vanilla hooks. Never throws. */
-    public static void seen(ITextComponent c) {
-        if (c == null || ours > 0 || !PatchesConfig.killfeed.enabled || !PatchesConfig.killfeed.followPackLines) {
-            return;
+    /**
+     * Called from the vanilla hooks; {@code receiver} = the player for a per-player send, null for a
+     * broadcast. True = the kill feed took the line, the hook cancels the send. Never throws.
+     */
+    public static boolean seen(ITextComponent c, @Nullable EntityPlayerMP receiver) {
+        KillFeedListener s = sink;
+        if (c == null || s == null || ours > 0 || !PatchesConfig.killfeed.enabled) {
+            return false;
         }
         try {
             MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
             if (server == null || !server.isCallingFromMinecraftThread()) {
-                return;
+                return false;
             }
-            String text = TextFormatting.getTextWithoutFormattingCodes(c.getUnformattedText());
-            LINES.add(server.getTickCounter(), text);
+            return s.offer(c, TextFormatting.getTextWithoutFormattingCodes(c.getUnformattedText()), receiver);
         } catch (Throwable t) {
-            // A mod's broken translation must never break its own chat send.
+            return false; // a mod's broken translation must never break its own chat send
         }
     }
 

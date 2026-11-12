@@ -76,6 +76,8 @@ Category `trickshots` in `dregorapatches.cfg`: `enabled, minDistance, tiers[] ("
 
 `nbtMarkers` syntax: `Key` or `a/b/c`, optionally `=value` / `!=value` (numbers compare numerically, `1b` = `1`). Each path is tried from the entity root, from `ForgeData` and from `ForgeCaps`, e.g. `ForgeCaps/<cap id>/tier!=0` for a capability that every mob carries with tier 0.
 
+2026-11-12: with the kill feed live, the callout is folded into the kill line (`03 §2.6`): distance after the weapon, tier/mount/flight/PB in its hover, a second line only for a new server record.
+
 ### As built (P2; moved from Warband into Dregora Patches 2026-11-08)
 `combat/ProjectileOrigin` + `combat/ShotTag`; `trick/AnnouncedMobs` (rules 1–3 then 4; `cached()` = per-entity `WeakHashMap` for 03), `NbtMarker`, `Tiers`, `RecordBook` (pure; PB per player + top 10 shots overall, a player may hold several), `ShotRecords` (`world/data/dregorapatches_trickshots.dat`), `TrickShotListener`, `CmdTrickShots` (non-ops allowed). Only shots that are called out (announced mobs, or any mob with `requireAnnounced = false`) are recorded. The callout uses `➶` (BMP glyph; the 🎯 emoji has no glyph in the 1.12 font). Record line: server record beats personal best; first ever shot says "first trick shot". `/dpatch debug kill` is `combat/DebugProbe` (with `debug damage`).
 
