@@ -1,5 +1,11 @@
 package io.github.tidefox.dregorapatches.trick;
 
+import java.util.Map;
+import java.util.WeakHashMap;
+
+import javax.annotation.Nullable;
+
+import io.github.tidefox.dregorapatches.killfeed.KillFeedListener;
 import io.github.tidefox.dregorapatches.util.Chat;
 import io.github.tidefox.dregorapatches.util.Fmt;
 import io.github.tidefox.dregorapatches.combat.ShotTag;
@@ -15,8 +21,34 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.fml.common.eventhandler.EventPriority;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
-/** Long-range arrow kills of announced mobs → callout + records (docs/06 §2.3–2.5). Observer only. */
+/**
+ * Long-range arrow kills of announced mobs → callout + records (docs/06 §2.3–2.5). Observer only.
+ * With the kill feed on, the callout is folded into the kill line (docs/03 §2.6): the tier and details
+ * go to its hover, only a new server record gets a line of its own.
+ */
 public final class TrickShotListener {
+
+    /** A trick shot for the kill feed's line. */
+    public static final class Callout {
+        public final String tier, detail;
+        /** Second line: a new server record only. */
+        @Nullable
+        public final String record;
+
+        Callout(String tier, String detail, @Nullable String record) {
+            this.tier = tier;
+            this.detail = detail;
+            this.record = record;
+        }
+    }
+
+    private static final Map<Entity, Callout> CALLOUTS = new WeakHashMap<>();
+
+    /** The trick shot that killed {@code victim}, once; the kill feed reads it at tick end. */
+    @Nullable
+    public static Callout take(Entity victim) {
+        return CALLOUTS.remove(victim);
+    }
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = false)
     public void onDeath(LivingDeathEvent e) {
@@ -58,6 +90,22 @@ public final class TrickShotListener {
             result = records.book.submit(new RecordBook.Entry(shooter.getCachedUniqueIdString(), shooter.getName(),
                     dist, victim.getName(), System.currentTimeMillis()));
             records.markDirty();
+        }
+        if (KillFeedListener.carriesTrickShots()) {
+            StringBuilder detail = new StringBuilder(tierName + "!");
+            if (shot.mounted) {
+                detail.append(" · mounted on ").append(shot.mount);
+            } else if (shot.airborne) {
+                detail.append(" · airborne");
+            }
+            detail.append(" · ").append(Fmt.seconds(flight)).append(" flight");
+            String line = recordLine(result);
+            boolean record = result != null && result.serverRecord && result.previousRecord != null;
+            if (line != null && !record) {
+                detail.append("\n★ ").append(line);
+            }
+            CALLOUTS.put(victim, new Callout(tierName, detail.toString(), record ? line : null));
+            return;
         }
         ITextComponent rich = message(shooter, victim, shot, tierName, dist, flight, result, true);
         ITextComponent msg = Chat.fit(rich, message(shooter, victim, shot, tierName, dist, flight, result, false));

@@ -1,35 +1,54 @@
 package io.github.tidefox.dregorapatches.killfeed;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 class KillLineTest {
 
-    @Test
-    void allParts() {
-        assertEquals(" · 97m · final 22.0 · 1m12s", KillLine.tail(97.6, 22, 72 * 20));
-    }
-
-    @Test
-    void meleeOneShotHasNoDistanceOrDuration() {
-        assertEquals(" · final 18.4", KillLine.tail(Double.NaN, 18.4, 3));
-    }
-
-    @Test
-    void nothingKnown() {
-        assertEquals("", KillLine.tail(Double.NaN, Double.NaN, -1));
-    }
+    private static final List<String> SLIME = Collections.singletonList("Defiled Slime");
+    private static final List<String> BY = Collections.singletonList("JCRVIII");
+    private static final String BLIGHT_LINE = "Blight Defiled Slime was killed by JCRVIII!";
 
     @Test
     void stripRemovesFormattingCodes() {
-        assertEquals("Blight Xaphan Lvl 4", KillLine.strip("\u00a7cBlight \u00a7rXaphan Lvl 4 "));
+        assertEquals("Blight Xaphan Lvl 4", KillLine.strip("§cBlight §rXaphan Lvl 4 "));
     }
 
     @Test
-    void ownLineVerbs() {
-        assertEquals(" was slain by Alice", KillLine.verb(KillCredit.Kind.DIRECT, "Alice", null));
-        assertEquals(" was slain by Alice's Wolf", KillLine.verb(KillCredit.Kind.PET, "Alice", "Wolf"));
-        assertEquals(" died fighting Alice", KillLine.verb(KillCredit.Kind.LINGERING, "Alice", null));
+    void blightLineIsLeftForTheBlight() {
+        assertFalse(KillLine.matches(BLIGHT_LINE, SLIME, false, BY), "plain split slime, same name");
+        assertTrue(KillLine.matches(BLIGHT_LINE, SLIME, true, BY));
+        assertTrue(KillLine.matches("Defiled Slime was slain by JCRVIII", SLIME, false, BY));
+    }
+
+    @Test
+    void lineMustNameTheKillerOrPet() {
+        assertFalse(KillLine.matches("Bob was slain by Carol", Collections.singletonList("Bob"), false, Collections.singletonList("Alice")));
+        assertTrue(KillLine.matches("Blight Spider was killed by Wolf!", Collections.singletonList("Spider"), true,
+                Arrays.asList("Alice", "Wolf")));
+        assertTrue(KillLine.matches("Zombie burned to death", Collections.singletonList("Zombie"), false,
+                Collections.<String>emptyList()), "lingering credit: the line may not name the player");
+    }
+
+    @Test
+    void shortNamesAndOtherMobsDontMatch() {
+        assertFalse(KillLine.matches("Ox was slain by Alice", Collections.singletonList("Ox"), false, Collections.<String>emptyList()));
+        assertFalse(KillLine.matches("Fire Dragon was slain by Alice", Arrays.asList("Ice Dragon", "Zombie"), false,
+                Collections.<String>emptyList()));
+        assertTrue(KillLine.matches("FIRE DRAGON was slain by alice", Collections.singletonList("Fire Dragon"), false,
+                Collections.singletonList("Alice")), "case-insensitive");
+    }
+
+    @Test
+    void streakTail() {
+        assertEquals(" (4 Blight) in 18s", KillLine.streakTail(4, 18 * 20));
+        assertEquals(" in 1m05s", KillLine.streakTail(0, 65 * 20));
     }
 }

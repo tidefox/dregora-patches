@@ -107,39 +107,46 @@ public final class PatchesConfig {
     }
 
     public static final class KillFeed {
-        @Config.Comment({"One follow-up line under the death message already in chat:",
-                "  <victim> was slain by <player>",
-                "    -> with [weapon] · distance · final hit · fight time"})
+        @Config.Comment({"One line per kill (docs/03 §2.6): the kill line already in chat (vanilla, Scaling Health,",
+                "Champions, any mod) is replaced by vanilla's death message with badges, the weapon and one extra:",
+                "  Blight Xaphan Lvl 4 was shot by Alice using [icon] · 97m"})
         public boolean enabled = true;
 
-        @Config.Comment("Follow-up for a player killed by a player (needs gamerule showDeathMessages)")
+        @Config.Comment("Player killed by a player (needs gamerule showDeathMessages)")
         public boolean playerKills = true;
 
-        @Config.Comment({"Follow-up under any kill line already in chat (vanilla, Scaling Health, any mod): the server's",
-                "system messages are watched and a line naming the dead mob/player gets the follow-up.",
-                "Off (or the hook missing): only player kills and announcedMobKills get one, as before."})
-        public boolean followPackLines = true;
-
-        @Config.Comment("Follow-up for announced mobs killed by a player: bosses, Blights, named mobs, and the "
-                + "trickshots.mobs / trickshots.nbtMarkers lists")
-        public boolean announcedMobKills = true;
-
-        @Config.Comment({"Notable mobs killed by a player get our own kill line when nothing else announced them:",
-                "  [Fire Dragon] was slain by Alice",
-                "    -> with [weapon] · ...",
-                "Notable = boss, Blight, announceMobs, trickshots.mobs/nbtMarkers, announceMinMaxHealth (and named mobs with announceNamed)."})
+        @Config.Comment({"Notable mobs killed by a player get our line even when nothing else announced them.",
+                "Notable = boss, Blight, announceMobs, trickshots.mobs/nbtMarkers, elite badge, announceMinMaxHealth,",
+                "a trick shot (and named mobs with announceNamed)."})
         public boolean announceUnannounced = true;
 
-        @Config.Comment("Registry ids that are notable (also count for trick shots). /dpatch debug kill prints a mob's id.")
-        public String[] announceMobs = {"iceandfire:firedragon", "iceandfire:icedragon", "iceandfire:lightningdragon",
-                "iceandfire:seaserpent"};
+        @Config.Comment("Registry ids that are notable and never collapsed into a streak (also count for trick shots). /dpatch debug kill prints a mob's id.")
+        public String[] announceMobs = {"iceandfire:seaserpent", "iceandfire:if_hydra", "iceandfire:dread_lich",
+                "iceandfire:myrmex_queen", "srparasites:anc_dreadnaut", "srparasites:anc_overlord",
+                "srparasites:overseer", "srparasites:warden", "srparasites:marauder", "srparasites:monarch",
+                "srparasites:beckon_siv", "srparasites:beckon_sv", "srparasites:dispatcher_siv"};
 
         @Config.Comment("Any mob with at least this max health is notable. 0 = off.")
         @Config.RangeDouble(min = 0, max = 1000000)
-        public double announceMinMaxHealth = 0;
+        public double announceMinMaxHealth = 150;
 
         @Config.Comment("Mobs with a custom name are notable (off: Lycanites/name-tagged mobs would spam chat)")
         public boolean announceNamed = false;
+
+        @Config.Comment("Champions tier (★ count) from which a Champion is elite (notable, never collapsed). 0 = off.")
+        @Config.RangeInt(min = 0, max = 100)
+        public int championsMinTier = 3;
+
+        @Config.Comment("InfernalMobs modifier count from which an Infernal is elite (6 = Ultra, 11 = Infernal). 0 = off.")
+        @Config.RangeInt(min = 0, max = 100)
+        public int infernalMinModifiers = 6;
+
+        @Config.Comment("Ice and Fire dragon ids; they get a 'Stage N' badge (stage from AgeTicks)")
+        public String[] dragonMobs = {"iceandfire:firedragon", "iceandfire:icedragon", "iceandfire:lightningdragon"};
+
+        @Config.Comment("Dragon stage from which a dragon is elite. 0 = off.")
+        @Config.RangeInt(min = 0, max = 5)
+        public int dragonMinStage = 3;
 
         @Config.Comment("Kills by a player's tamed mob (wolf, dragon, …) credit the owner")
         public boolean petKills = true;
@@ -152,14 +159,14 @@ public final class PatchesConfig {
         @Config.RangeInt(min = 0, max = 100)
         public int lineWaitTicks = 2;
 
-        @Config.Comment("Shot distance for bow/crossbow kills")
-        public boolean showDistance = true;
+        @Config.Comment({"Same player killing the same non-elite mob type again within this many seconds: no new line,",
+                "one summary line when the streak ends ('…and 11 more Defiled Slime kills (4 Blight) in 18s'). 0 = off."})
+        @Config.RangeInt(min = 0, max = 300)
+        public int streakSec = 10;
 
-        @Config.Comment("Damage of the killing hit")
-        public boolean showFinalHit = true;
-
-        @Config.Comment("Time since the first player hit (fights under 1 s show none)")
-        public boolean showDuration = true;
+        @Config.Comment("Fight time is shown after the weapon from this many seconds (shorter: only in the hover)")
+        @Config.RangeInt(min = 0, max = 3600)
+        public int minFightSec = 5;
 
         @Config.Comment("A fight ends after this many seconds without a player hit")
         @Config.RangeInt(min = 1, max = 3600)

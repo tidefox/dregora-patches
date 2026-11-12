@@ -9,21 +9,24 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * docs/03 §2.5: read-only tap on per-player system messages (team death messages, mods that send
- * their announcement to each player). Action-bar messages are skipped.
+ * docs/03 §2.6: tap on per-player system messages (team death messages, mods that send their
+ * announcement to each player, e.g. Scaling Health). A kill line the kill feed takes is canceled
+ * here and sent again, as one line, at tick end. Action-bar messages are skipped.
  */
 @Mixin(EntityPlayerMP.class)
 public abstract class MixinEntityPlayerMP {
 
-    @Inject(method = "sendMessage(Lnet/minecraft/util/text/ITextComponent;)V", at = @At("HEAD"), require = 0)
+    @Inject(method = "sendMessage(Lnet/minecraft/util/text/ITextComponent;)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void dp$tapMessage(ITextComponent component, CallbackInfo ci) {
-        ChatTap.seen(component, this);
+        if (ChatTap.seen(component, (EntityPlayerMP) (Object) this)) {
+            ci.cancel();
+        }
     }
 
-    @Inject(method = "sendStatusMessage(Lnet/minecraft/util/text/ITextComponent;Z)V", at = @At("HEAD"), require = 0)
+    @Inject(method = "sendStatusMessage(Lnet/minecraft/util/text/ITextComponent;Z)V", at = @At("HEAD"), cancellable = true, require = 0)
     private void dp$tapStatus(ITextComponent component, boolean actionBar, CallbackInfo ci) {
-        if (!actionBar) {
-            ChatTap.seen(component, this);
+        if (!actionBar && ChatTap.seen(component, (EntityPlayerMP) (Object) this)) {
+            ci.cancel();
         }
     }
 }

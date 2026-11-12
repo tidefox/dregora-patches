@@ -1,48 +1,54 @@
 package io.github.tidefox.dregorapatches.killfeed;
 
+import java.util.Collection;
+import java.util.Locale;
+
 import io.github.tidefox.dregorapatches.util.Fmt;
 
-/** The gray tail of the follow-up line, e.g. {@code " · 97m · final 22.0 · 1m12s"}. Pure, unit-tested. */
+/** Pure text rules of the one-line kill feed (docs/03 §2.6). Unit-tested. */
 public final class KillLine {
 
-    /** Fights shorter than this (one-shots) show no duration. */
-    static final long MIN_DURATION_TICKS = 20;
+    /** Names shorter than this match too much ("Ox" in "Oxford"). */
+    static final int MIN_NAME = 3;
 
     private KillLine() {}
 
     /** Removes {@code §x} formatting codes and trims. */
     public static String strip(String s) {
-        return s == null ? "" : s.replaceAll("(?i)\u00a7[0-9a-fk-or]", "").trim();
-    }
-
-    /** Our own kill line after the victim's name (docs/03 §2.5). */
-    public static String verb(KillCredit.Kind kind, String killer, String pet) {
-        switch (kind) {
-            case PET:
-                return " was slain by " + killer + "'s " + pet;
-            case LINGERING:
-                return " died fighting " + killer;
-            default:
-                return " was slain by " + killer;
-        }
+        return s == null ? "" : s.replaceAll("(?i)§[0-9a-fk-or]", "").trim();
     }
 
     /**
-     * @param distance blocks from the shot's origin, or NaN (not a tagged shot / hidden)
-     * @param finalHit damage of the killing hit, or NaN (unknown / hidden)
-     * @param duration fight length in ticks, or negative (unknown / hidden)
+     * Is {@code line} the kill line of this death? It names the victim (≥ {@value #MIN_NAME} chars) and,
+     * if {@code credits} is non-empty, the killer or their pet. Scaling Health's {@code Blight <name> …}
+     * line is left for a Blight: a split slime shares its parent's name.
      */
-    public static String tail(double distance, double finalHit, long duration) {
-        StringBuilder sb = new StringBuilder();
-        if (!Double.isNaN(distance)) {
-            sb.append(" · ").append(Fmt.meters(distance));
+    static boolean matches(String line, Collection<String> names, boolean blight, Collection<String> credits) {
+        String l = line.toLowerCase(Locale.ROOT);
+        boolean named = false;
+        for (String n : names) {
+            if (n == null || n.length() < MIN_NAME) {
+                continue;
+            }
+            String name = n.toLowerCase(Locale.ROOT);
+            if (l.contains(name) && (blight || !l.contains("blight " + name))) {
+                named = true;
+                break;
+            }
         }
-        if (!Double.isNaN(finalHit)) {
-            sb.append(" · final ").append(Fmt.num(finalHit));
+        if (!named || credits.isEmpty()) {
+            return named;
         }
-        if (duration >= MIN_DURATION_TICKS) {
-            sb.append(" · ").append(Fmt.duration(duration));
+        for (String k : credits) {
+            if (k != null && !k.isEmpty() && l.contains(k.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
         }
-        return sb.toString();
+        return false;
+    }
+
+    /** {@code " (4 Blight) in 18s"} after {@code "…and 11 more <mob> kills"}. */
+    static String streakTail(int blights, long ticks) {
+        return (blights > 0 ? " (" + blights + " Blight)" : "") + " in " + Fmt.duration(ticks);
     }
 }

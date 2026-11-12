@@ -62,12 +62,23 @@ public final class Chat {
         return s;
     }
 
-    /** {@code [Name]} with a {@code SHOW_ITEM} hover built from a stored item NBT string. */
+    /**
+     * {@code [Name]} with a {@code SHOW_ITEM} hover built from a stored item NBT string. With a hover the
+     * text starts with three spaces: Quark's "Render items in chat" (in the pack) draws the item's icon
+     * there, as for vanilla's {@code ItemStack.getTextComponent} (docs/03 §2.6).
+     */
     public static ITextComponent item(String name, @Nullable String itemNbt, TextFormatting color) {
-        TextComponentString c = text("[" + name + "]", color);
+        TextComponentString c = text((itemNbt != null ? "   [" : "[") + name + "]", color);
         if (itemNbt != null) {
             c.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new TextComponentString(itemNbt)));
         }
+        return c;
+    }
+
+    /** Just the item's icon (Quark) with its tooltip on hover; blanks on clients without Quark. */
+    public static ITextComponent icon(ItemStack stack) {
+        TextComponentString c = new TextComponentString("   ");
+        c.getStyle().setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new TextComponentString(itemNbt(stack))));
         return c;
     }
 

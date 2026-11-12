@@ -50,7 +50,7 @@ Pack line for Blights (seen on the server, 2026-11-08): `Blight <mob name> was k
 - Fight = first player hit → death; a gap > `fightTimeoutSec` (60) starts a new fight. Fights < 1 s show no time. Final hit shown only if the killing hit landed that tick.
 
 ### 2.4 Config (`killfeed`)
-`enabled, playerKills, followPackLines, announcedMobKills, announceUnannounced, announceMobs[], announceMinMaxHealth, announceNamed, petKills, lingerCreditSec, lineWaitTicks, showDistance, showFinalHit, showDuration, fightTimeoutSec`.
+Superseded by §2.6: `enabled, playerKills, announceUnannounced, announceMobs[], announceMinMaxHealth (150), announceNamed, championsMinTier (3), infernalMinModifiers (6), dragonMobs[], dragonMinStage (3), petKills, lingerCreditSec, lineWaitTicks, streakSec (10), minFightSec (5), fightTimeoutSec`. Existing server cfgs keep their old values (e.g. `announceMinMaxHealth = 0`, the old `announceMobs`); set them by hand.
 
 ### 2.5 Dynamic engine (2026-11-09)
 Problem (owner): kill lines from the pack showed up with no follow-up under them, because §2.1 only knew a fixed list (players, `AnnouncedMobs`) and only credited a player who dealt the blow. Ice and Fire dragons and other big mobs had no line at all.
@@ -71,7 +71,7 @@ Now the follow-up is decided by what is actually in chat:
 
 `/dpatch debug kill [n]` now also reports the kill feed's decision for the next n player-credited deaths: `follow-up under: <line>`, `own line + follow-up`, or why nothing was sent.
 
-### 2.6 Compact one-line feed (decided 2026-11-12, not built)
+### 2.6 Compact one-line feed (decided and built 2026-11-12)
 Problem (owner, screenshot of a Blight Defiled Slime fight): 21 lines for one slime chain. Every kill got a `↳ with [XP Printer 3000] · final …` line (same weapon each time); a pack line that already said `using [XP Printer 3000]` got the weapon again; every split slime was announced; Blight split slimes got **our own** gold line while plain ones took Scaling Health's line (matching bug, see *Verified* below). Long lines also wrap at default chat width (~50 chars).
 
 Decisions:
@@ -133,3 +133,16 @@ Known costs: held-back lines arrive a few seconds late during a streak; long nam
 - (§2.5) Wolf kills a Blight → `↳ Alice's [Wolf]` under Scaling Health's line.
 - (§2.5) Set a Blight on fire, it burns to death → `↳ Alice's last hit, with [Sword]`.
 - (§2.5) Ordinary zombie kill → nothing. `/dpatch debug kill 5` explains each decision.
+
+#### As built (2026-11-12)
+- `killfeed/KillFeedListener`: pending kill at **HIGHEST** `LivingDeathEvent` (reads only; Scaling Health and Champions announce at NORMAL inside the event, vanilla after it), with vanilla's death message (`getCombatTracker().getDeathMessage()`) captured then. A LOWEST `receiveCanceled = true` listener gives the lines of a canceled death back.
+- `ChatTap.seen` → `offer`: newest pending first, `KillLine.matches` (victim name, Blight rule, killer or pet name unless lingering credit); a match is held and the hook **cancels** the send (`MixinPlayerList`, `MixinEntityPlayerMP`, now `cancellable`). Per-player copies of one line merge per receiver. `ChatLines` is gone.
+- Tick end: held → our line to the same audience (broadcast if any copy was a broadcast, else those players); no line by `lineWaitTicks` → our line only if notable (old rules, a trick shot, or an elite badge). Any exception or a line over `Chat.MAX_JSON` → the held originals go out unchanged.
+- Our line: the captured `TextComponentTranslation` with arg 0 = badges + name (SHOW_TEXT hover: id, max HP, Champion/Infernal/dragon details, final hit, fight time), pet kills arg 1 = `Alice's Wolf`, `.item` keys arg 2 = our weapon; otherwise ` using` + `Chat.icon` appended. Extra: ` · 97m` (aqua, hover = trick tier/mount/flight/PB) if ≥ `trickshots.minDistance`, else ` · 1m12s` if ≥ `minFightSec`.
+- Streaks: key = player + registry id; a kill is never collapsed if the victim is a player, a boss, elite, custom-named, in `announceMobs`, or a trick shot. Summary: `  …and N more <entity name> kills (B Blight) in 18s` (entity name is a translation key, the client translates).
+- `killfeed/Badges`: Blight, `★`×tier, `Rare`/`Ultra`/`Infernal`, `Stage N`; one `writeToNBT` per announced kill. Colors: boss gold, elite red, Blight light purple.
+- Trick shots (`06`): with the kill feed live, `TrickShotListener` records as before but hands a `Callout` to the kill feed instead of broadcasting; only a new server record gets its own line (`  ★ new server record …`). Kill feed off or hooks missing → the old callout.
+- `Chat.item` text now starts with three spaces when it has a hover (Quark icon, also `/trickshots`); `Chat.icon` = icon only.
+- Tests: `KillLineTest` (matching, Blight rule, streak tail), `BadgesTest` (Infernal ranks, dragon stage).
+
+Tests (in-game, need a client): Blight slime chain → first line, then one summary; a tier-5 Champion → one line (not Champions' + ours); arrow kill of a Blight at 50 m → `was shot by … using [icon] · 50m`, hover shows the tier; PvP → vanilla wording + icon; pet kill → `Alice's Wolf`; zombie → nothing; a client without Quark → blanks, tooltip on hover; `/dpatch debug kill 5` shows `replaced:` / `streak, counted` / `own line`.
