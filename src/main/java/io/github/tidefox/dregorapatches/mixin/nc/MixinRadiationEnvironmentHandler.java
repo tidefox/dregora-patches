@@ -6,7 +6,6 @@ import nc.config.NCConfig;
 import nc.radiation.environment.RadiationEnvironmentHandler;
 import nc.radiation.environment.RadiationEnvironmentInfo;
 import nc.tile.radiation.ITileRadiationEnvironment;
-import nc.tile.radiation.TileRadiationScrubber;
 import nc.util.FourPos;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +27,8 @@ public abstract class MixinRadiationEnvironmentHandler {
 
     @Inject(method = "removeTile", at = @At("HEAD"), cancellable = true, require = 0)
     private static void dp$removeTile(ITileRadiationEnvironment tile, CallbackInfo ci) {
-        if (!(tile instanceof TileRadiationScrubber)) return; // unknown implementer: keep NC's full scan
+        // by name: TileRadiationScrubber implements IC2 interfaces and can't be compiled against; others keep the full scan
+        if (!"nc.tile.radiation.TileRadiationScrubber".equals(tile.getClass().getName())) return;
         FourPos pos = tile.getFourPos();
         int r = NCConfig.radiation_scrubber_radius;
         for (int x = -r; x <= r; x++) for (int y = -r; y <= r; y++) for (int z = -r; z <= r; z++) {
