@@ -89,3 +89,11 @@ None. The same machines get the same bonus on the same ticks. The only theoretic
 
 ## 4. Live result (2026-11-08, 5–6 players)
 `/dpatch levelup2 stats` at 20:00 / 20:30: fix on, 3 candidate classes (0 learned), 27.3 / 20.7 candidates per world tick, **0.137 / 0.090 ms per world tick** (was ≈ 2.3 ms per tick, §1.1), 0 CMEs. Spark (30 min): `doFurnaceTicks` → `FurnaceScan.tick` = **0.44 % of total, 7.8 s / 35,776 ticks = 0.22 ms per server tick** (two worlds × ~0.11 ms), was 145 s / 54 min = 8.4 % of busy ≈ 2.3 ms. ≈ 10× cheaper; the §3 target (< 0.1 %) is missed. 6.7 s of the 7.8 s is `CandidateCache.isCandidate` — i.e. walking `loadedTileEntityList` and reading each TE's class (cache misses on scattered objects), not the map lookup itself. Going lower needs no per-tick walk at all (track furnaces/brewing stands on TE add/remove); not worth the risk for 0.2 ms unless asked.
+
+## 5. Reuse the candidates while the list is unchanged (2026-11-12)
+The 54 min profile (`WSIKZHCREG`, after exploring) puts `FurnaceScan.tick` at **2.31 % = 74 s ≈ 1.2 ms per tick**, of which 2.04 % is `CandidateCache.isCandidate`. The walk is the cost, and it grows with `loadedTileEntityList` (ruins kept loaded; see `07 §4.8`).
+- `FurnaceScan` keeps, per dimension, the candidate tile entities found on the last walk and the list's structural version (`ListVersion` = `ArrayList.modCount` by reflection). The next tick reuses them unless the list was added to or removed from. If another mod swapped the list type, the version is unknown → walk every tick, as before.
+- Same TEs in the same order → same `hasCapability`/`getCapability` calls → same gameplay. Learning scans (every 200 calls) still walk everything and drop the snapshot.
+- Snapshots of unloaded/replaced worlds are dropped each tick (`DimensionManager.getWorld(dim) != snapshot.world`), so they don't pin a world.
+- Stats: `full list walks` next to `calls`. A low ratio = reuse is working.
+- ⚠ verify live: `/dpatch levelup2 stats` at base (walks ≪ calls) and spark `FurnaceScan.tick` < 0.1 %.
