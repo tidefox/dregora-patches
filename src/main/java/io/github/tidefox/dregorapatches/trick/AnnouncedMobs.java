@@ -31,7 +31,7 @@ public final class AnnouncedMobs {
      * Scaling Health's Blight flag: a boolean in the entity's ForgeData
      * ({@code BlightHandler.isBlight}, verified against ScalingHealth-1.12.2-1.3.42+147).
      */
-    static final String BLIGHT_KEY = "ScalingHealth.IsBlight";
+    public static final String BLIGHT_KEY = "ScalingHealth.IsBlight";
 
     private static String[] mobsSrc, killfeedMobsSrc, markersSrc;
     private static Set<String> mobs = new HashSet<>();

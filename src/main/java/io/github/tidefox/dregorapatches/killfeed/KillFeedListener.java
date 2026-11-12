@@ -56,7 +56,7 @@ public final class KillFeedListener {
     private static final class Pending {
         final long sinceTick, deadline;
         final Set<String> names;
-        final boolean notable;
+        final boolean notable, blight;
         final String victimName;
         @Nullable
         final String victimNbt;
@@ -67,13 +67,14 @@ public final class KillFeedListener {
         final ItemStack weapon;
         final String tail;
 
-        Pending(long sinceTick, long deadline, Set<String> names, boolean notable, String victimName,
+        Pending(long sinceTick, long deadline, Set<String> names, boolean notable, boolean blight, String victimName,
                 @Nullable String victimNbt, String killerName, KillCredit.Kind kind, @Nullable Entity pet,
                 ItemStack weapon, String tail) {
             this.sinceTick = sinceTick;
             this.deadline = deadline;
             this.names = names;
             this.notable = notable;
+            this.blight = blight;
             this.victimName = victimName;
             this.victimNbt = victimNbt;
             this.killerName = killerName;
@@ -215,7 +216,8 @@ public final class KillFeedListener {
         String tail = KillLine.tail(distance, finalHit, duration);
 
         int tick = server.getTickCounter();
-        Pending p = new Pending(tick, tick + c.lineWaitTicks, names(victim), notable, plain(victim.getDisplayName()),
+        Pending p = new Pending(tick, tick + c.lineWaitTicks, names(victim), notable,
+                victim.getEntityData().getBoolean(AnnouncedMobs.BLIGHT_KEY), plain(victim.getDisplayName()),
                 Chat.entityNbt(victim), credit.player.getName(), credit.kind, credit.pet, weapon, tail);
 
         if (ChatTap.live()) {
@@ -306,9 +308,12 @@ public final class KillFeedListener {
         }
         int tick = server.getTickCounter();
         if (!pending.isEmpty()) {
+            // Notable kills pick first: a plain mob dying in the same tick as a same-named Blight
+            // must not take the Blight's line (docs/03 §2.6, split slimes). Stable sort keeps age order.
+            pending.sort((a, b) -> Boolean.compare(b.notable, a.notable));
             for (Iterator<Pending> it = pending.iterator(); it.hasNext(); ) {
                 Pending p = it.next();
-                String line = ChatTap.LINES.claim(p.sinceTick, p.names);
+                String line = ChatTap.LINES.claim(p.sinceTick, p.names, p.blight);
                 if (line != null) {
                     Chat.broadcast(server, p.follow());
                     note(p, "follow-up under: " + line);

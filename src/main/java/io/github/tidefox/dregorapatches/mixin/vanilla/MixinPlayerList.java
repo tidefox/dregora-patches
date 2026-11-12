@@ -15,7 +15,7 @@ public abstract class MixinPlayerList {
     @Inject(method = "sendMessage(Lnet/minecraft/util/text/ITextComponent;Z)V", at = @At("HEAD"), require = 0)
     private void dp$tapBroadcast(ITextComponent component, boolean isSystem, CallbackInfo ci) {
         if (isSystem) { // false = a player's chat message
-            ChatTap.seen(component);
+            ChatTap.seen(component, null);
         }
     }
 }

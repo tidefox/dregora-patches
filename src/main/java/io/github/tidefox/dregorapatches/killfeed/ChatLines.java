@@ -2,9 +2,11 @@ package io.github.tidefox.dregorapatches.killfeed;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
@@ -17,6 +19,8 @@ public final class ChatLines {
     static final class Line {
         final long tick;
         final String text, lower;
+        /** Players this line went to one by one; a second copy to one of them is a second line. */
+        final Set<Object> receivers = new HashSet<>();
         boolean used;
 
         Line(long tick, String text) {
@@ -34,34 +38,50 @@ public final class ChatLines {
 
     private final List<Line> lines = new ArrayList<>();
 
-    /** A line sent to several players one by one counts once per tick. */
-    public synchronized void add(long tick, String text) {
+    /**
+     * A line sent to several players one by one ({@code receiver} = that player) counts once per tick,
+     * but two same-text kills in one tick (two Blight slimes) stay two lines: the second copy to the
+     * same player starts a new one. {@code receiver == null} (a broadcast) is always a new line.
+     */
+    public synchronized void add(long tick, String text, @Nullable Object receiver) {
         if (text == null || text.trim().isEmpty()) {
             return;
         }
-        for (int i = lines.size() - 1; i >= 0 && lines.get(i).tick == tick; i--) {
-            if (lines.get(i).text.equals(text)) {
-                return;
+        if (receiver != null) {
+            for (int i = lines.size() - 1; i >= 0 && lines.get(i).tick == tick; i--) {
+                Line l = lines.get(i);
+                if (l.text.equals(text) && !l.receivers.isEmpty() && l.receivers.add(receiver)) {
+                    return;
+                }
             }
         }
         if (lines.size() >= MAX_LINES) {
             lines.remove(0);
         }
-        lines.add(new Line(tick, text));
+        Line l = new Line(tick, text);
+        if (receiver != null) {
+            l.receivers.add(receiver);
+        }
+        lines.add(l);
     }
 
     /**
      * Claims the oldest unused line sent at or after {@code sinceTick} that contains one of
-     * {@code names} (case-insensitive). Returns its text, or null.
+     * {@code names} (case-insensitive). Returns its text, or null. Scaling Health's
+     * {@code Blight <name> …} line is left for a Blight: a split slime shares its parent's name.
      */
     @Nullable
-    public synchronized String claim(long sinceTick, Collection<String> names) {
+    public synchronized String claim(long sinceTick, Collection<String> names, boolean blight) {
         for (Line l : lines) {
             if (l.used || l.tick < sinceTick) {
                 continue;
             }
             for (String n : names) {
-                if (n != null && n.length() >= MIN_NAME && l.lower.contains(n.toLowerCase(Locale.ROOT))) {
+                if (n == null || n.length() < MIN_NAME) {
+                    continue;
+                }
+                String name = n.toLowerCase(Locale.ROOT);
+                if (l.lower.contains(name) && (blight || !l.lower.contains("blight " + name))) {
                     l.used = true;
                     return l.text;
                 }

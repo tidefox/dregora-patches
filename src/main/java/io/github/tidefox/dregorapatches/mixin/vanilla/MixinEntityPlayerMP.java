@@ -17,13 +17,13 @@ public abstract class MixinEntityPlayerMP {
 
     @Inject(method = "sendMessage(Lnet/minecraft/util/text/ITextComponent;)V", at = @At("HEAD"), require = 0)
     private void dp$tapMessage(ITextComponent component, CallbackInfo ci) {
-        ChatTap.seen(component);
+        ChatTap.seen(component, this);
     }
 
     @Inject(method = "sendStatusMessage(Lnet/minecraft/util/text/ITextComponent;Z)V", at = @At("HEAD"), require = 0)
     private void dp$tapStatus(ITextComponent component, boolean actionBar, CallbackInfo ci) {
         if (!actionBar) {
-            ChatTap.seen(component);
+            ChatTap.seen(component, this);
         }
     }
 }

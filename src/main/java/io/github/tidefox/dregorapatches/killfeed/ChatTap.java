@@ -1,5 +1,7 @@
 package io.github.tidefox.dregorapatches.killfeed;
 
+import javax.annotation.Nullable;
+
 import io.github.tidefox.dregorapatches.PatchesConfig;
 import io.github.tidefox.dregorapatches.mixinsupport.MixinState;
 import net.minecraft.server.MinecraftServer;
@@ -28,8 +30,8 @@ public final class ChatTap {
                 && (MixinState.isApplied("vanilla.MixinPlayerList") || MixinState.isApplied("vanilla.MixinEntityPlayerMP"));
     }
 
-    /** Called from the vanilla hooks. Never throws. */
-    public static void seen(ITextComponent c) {
+    /** Called from the vanilla hooks; {@code receiver} = the player for a per-player send, null for a broadcast. Never throws. */
+    public static void seen(ITextComponent c, @Nullable Object receiver) {
         if (c == null || ours > 0 || !PatchesConfig.killfeed.enabled || !PatchesConfig.killfeed.followPackLines) {
             return;
         }
@@ -39,7 +41,7 @@ public final class ChatTap {
                 return;
             }
             String text = TextFormatting.getTextWithoutFormattingCodes(c.getUnformattedText());
-            LINES.add(server.getTickCounter(), text);
+            LINES.add(server.getTickCounter(), text, receiver);
         } catch (Throwable t) {
             // A mod's broken translation must never break its own chat send.
         }
