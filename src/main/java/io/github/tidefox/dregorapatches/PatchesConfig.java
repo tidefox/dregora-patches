@@ -123,8 +123,9 @@ public final class PatchesConfig {
         @Config.Comment("Registry ids that are notable and never collapsed into a streak (also count for trick shots). /dpatch debug kill prints a mob's id.")
         public String[] announceMobs = {"iceandfire:seaserpent", "iceandfire:if_hydra", "iceandfire:dread_lich",
                 "iceandfire:myrmex_queen", "srparasites:anc_dreadnaut", "srparasites:anc_overlord",
-                "srparasites:overseer", "srparasites:warden", "srparasites:marauder", "srparasites:monarch",
-                "srparasites:beckon_siv", "srparasites:beckon_sv", "srparasites:dispatcher_siv"};
+                // SRP: only rare, high-HP parasites (Lost Cities run phase 10 with x4 health, so health can't tell elites apart)
+                "srparasites:sim_dragone", "srparasites:draconite", "srparasites:kirin",
+                "srparasites:beckon_siv", "srparasites:dispatcher_siv"};
 
         @Config.Comment("Any mob with at least this max health is notable. 0 = off.")
         @Config.RangeDouble(min = 0, max = 1000000)
@@ -150,7 +151,11 @@ public final class PatchesConfig {
 
         @Config.Comment("SRParasites evolution phase (0-8, the phase a parasite was born in) from which it is elite. 0 = off.")
         @Config.RangeInt(min = 0, max = 100)
-        public int srpMinPhase = 6;
+        public int srpMinPhase = 0;
+
+        @Config.Comment({"SRParasites kills only get our own line when the mob is in announceMobs or a boss",
+                "(ignores announceMinMaxHealth, Blight, elite badges and trick shots for srparasites:*)."})
+        public boolean srpListedOnly = true;
 
         @Config.Comment("Kills by a player's tamed mob (wolf, dragon, …) credit the owner")
         public boolean petKills = true;
