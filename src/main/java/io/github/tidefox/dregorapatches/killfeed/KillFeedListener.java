@@ -403,6 +403,12 @@ public final class KillFeedListener {
     }
 
     private static boolean isNotable(Pending p) {
+        if (PatchesConfig.killfeed.srpListedOnly) {
+            ResourceLocation id = EntityList.getKey(p.victim);
+            if (id != null && "srparasites".equals(id.getNamespace())) {
+                return p.whitelisted || !p.victim.isNonBoss();
+            }
+        }
         if (p.notable || p.trick() != null) {
             return true;
         }
