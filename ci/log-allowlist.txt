@@ -6,3 +6,5 @@
 \[STDERR\]: \[levelup2\.skills\.SkillRegistry:loadFromJson:[0-9]+\]
 # Lycanites Mobs 2.0.8.10 reads config/lycanitesmobs/mobevents before creating it on a fresh config
 [0-9]+:java\.nio\.file\.NoSuchFileException: \./config/lycanitesmobs/mobevents$
+# SoManyEnchantments: its BetterSurvival / InfernalMobs compat configs, those mods are not in the smoke set
+FermiumMixinConfig config ".*" from somanyenchantments disabled as incompatible without

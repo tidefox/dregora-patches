@@ -4,7 +4,7 @@ Handoff for Claude Code. Read this, then `docs/00-overview.md`, then the doc for
 
 ## What this repo is
 One **server-side-only** Forge mod for the owner's RLCraft Dregora 1.1.2b co-op server (Minecraft 1.12.2, Forge 14.23.5.2860, Java 8; ~6 concurrent players, 4 regulars): **Dregora Patches** (`dregorapatches`), a coremod jar with
-- **patches**: mixin fixes for pack mods (NuclearCraft, Level Up! 2, Lycanites Mobs), and
+- **patches**: mixin fixes for pack mods (NuclearCraft, Level Up! 2, Lycanites Mobs, SoManyEnchantments), and
 - **features**: passive Forge event observers for this server (trick shots, kill feed).
 
 Single Gradle project at the repo root. Repo: `tidefox/dregora-patches` (formerly `dregora-server-mods`).
@@ -17,6 +17,7 @@ docs/00-overview.md          scope, rules, phases, commands  ← start here
 docs/07-nc-fission-fix.md    Patches P1 (live lag problem)
 docs/08-levelup2-furnace-scan.md  Patches P1 (steady 2.3 ms/tick)
 docs/09-lycanites-pet-recall.md   Patches: summoning-menu Teleport for pets in unloaded chunks
+docs/10-sme-possession.md    Patches: Curse of Possession items never voided outside death
 docs/06-trick-shots.md       feature P2
 docs/03-killfeed.md          feature P3 (code done)
 docs/handoff/friendly-fire-rework.md  spec for the separate friendly-fire repo — not built here
@@ -78,6 +79,8 @@ Build layout: copy the pattern of **`tidefox/skinbridge`** (a working FermiumBoo
 2026-11-12, one-line kill feed (`docs/03 §2.6`): the matched kill line is replaced by vanilla's death message + mod badges (Blight, Champions ★, Infernal rank, dragon stage) + Quark weapon icon + one extra; streaks collapse; trick-shot callouts folded in. Pending at HIGHEST, hooks cancel the held line, originals resent on failure. ⚠ untested in-game.
 
 **Lycanites pet recall: code done** (2026-11-09, `docs/09`): Teleport in the summoning menu respawns a pet/mount whose chunk unloaded (Lycanites kept a stale, not-dead reference). Compiles against `curse.maven:lycanitesmobs-224770:5750564` (2.0.8.10); smoke applies it. Still untested (needs a client): `09 §3`.
+
+**Curse of Possession no-void: code done** (2026-11-15, `docs/10`): SME's join handler deleted cursed drops in 5 ticks whenever nobody nearby had room (not only on death). Compiles against `curse.maven:so-many-enchantments-267035:7156865` (1.0.8); smoke applies it. Still untested (needs a client): `10 §3`.
 
 RLC_Nuclear check: done — not installed on server or client (Dregora 1.2.0-beta-2 only; re-check if the server moves to 1.2.x). Keep Chunk Pregenerator idle during P1 measurements.
 
