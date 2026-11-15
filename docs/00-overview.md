@@ -21,6 +21,7 @@ History (2026-11-08): the separate **Warband** mod was dissolved. Trick shots an
 | `07-nc-fission-fix.md` | NuclearCraft ruin fix: reactor freeze, chunk guard, tracer | patch | **P1** | freeze: reactors run only after a player claims them (`/reactor`). Guard: NC no longer loads chunks or keeps them loaded (`07 §2`) |
 | `08-levelup2-furnace-scan.md` | Level Up! 2 per-tick tile-entity scan | patch | **P1** | no |
 | `09-lycanites-pet-recall.md` | Lycanites: summoning-menu Teleport works for pets in unloaded chunks | patch | done | yes: Teleport now brings back a pet left in an unloaded chunk (respawned at you) |
+| `10-sme-possession.md` | SoManyEnchantments: Curse of Possession items are no longer deleted outside death; on death they go to a teammate | patch | done | yes: a cursed item that can't go back into a full inventory stays on the ground; on death a teammate within 8 blocks gets it (solo: deleted as before) |
 | `06-trick-shots.md` | Trick shots (announced mobs only) | feature | **P2** | no |
 | `03-killfeed.md` | Kill feed (weapon follow-up line) | feature | P3 (code done) | no |
 

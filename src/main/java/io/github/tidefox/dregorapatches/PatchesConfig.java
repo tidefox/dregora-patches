@@ -21,6 +21,9 @@ public final class PatchesConfig {
     @Config.Comment("Lycanites Mobs pets (docs/09)")
     public static final Lycanites lycanites = new Lycanites();
 
+    @Config.Comment("SoManyEnchantments (docs/10)")
+    public static final Sme sme = new Sme();
+
     @Config.Comment("Trick shots on announced mobs (docs/06)")
     public static final TrickShots trickshots = new TrickShots();
 
@@ -64,6 +67,16 @@ public final class PatchesConfig {
         @Config.Comment("Teleport in the summoning menu also works for a pet/mount whose chunk was unloaded: "
                 + "it is respawned at you with its level, XP, inventory and health.")
         public boolean petRecallFix = true;
+    }
+
+    public static final class Sme {
+        @Config.Comment("Curse of Possession items are only deleted as a death drop. Otherwise they go into the closest "
+                + "player's inventory or empty offhand, else stay on the ground as a normal item instead of vanishing after 5 ticks.")
+        public boolean possessionNoVoid = true;
+
+        @Config.Comment("On death, a Curse of Possession item goes to the nearest living teammate within 8 blocks "
+                + "with room (inventory, then empty offhand). Solo or nobody has room: deleted as before.")
+        public boolean possessionDeathToTeammate = true;
     }
 
     public static final class TrickShots {

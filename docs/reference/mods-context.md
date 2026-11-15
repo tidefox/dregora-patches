@@ -107,6 +107,7 @@ Server: RLCraft Dregora 1.1.2b · Minecraft 1.12.2 · Forge 14.23.5.2860 · Java
 | Mod | Jar | Where it shows up |
 |---|---|---|
 | Lycanites Mobs | `lycanitesmobs-1.12.2-2.0.8.10` (CurseForge 5750564) | entity AI + spawner (≈ 3%); patched: `PetEntry.onUpdate` (`09`) |
+| SoManyEnchantments | `SoManyEnchantments-1.0.8-1.12.2` (CurseForge 267035/7156865) | patched: `EnchantmentCurseofPossession.onEntityJoinWorldEvent` (`10`) |
 | Fish's Undead Rising (`com.Fishmod`) | `Fish's Undead Rising-1.4.2` | raven/mimic AI, pathfinding (≈ 4.5%) |
 | Ice and Fire | `Ice and Fire-2.0.9` | dragons/trolls AI |
 | RLTweaker / AI Reducer (`com.charles445`) | `RLTweaker-1.12.2-0.7.5`, `AIReducer-1.12.2-0.3.0` | collision boxes, reduced AI (≈ 3.6% self time) |

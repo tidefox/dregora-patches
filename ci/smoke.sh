@@ -7,7 +7,7 @@
 #
 # usage: ci/smoke.sh <server-dir> <dregorapatches.jar> <fermiumbooter.jar> [patched-mod.jar ...]
 #   <server-dir> must contain an installed Forge server (forge-*.jar + libraries/).
-#   patched mods: NuclearCraft 2.19a, Level Up! 2 1.1.23 and Lycanites Mobs 2.0.8.10 (the server's jars).
+#   patched mods: NuclearCraft 2.19a, Level Up! 2 1.1.23, Lycanites Mobs 2.0.8.10 and SoManyEnchantments 1.0.8 (the server's jars).
 set -uo pipefail
 
 # Resolve everything to absolute paths before we cd into the server dir.
@@ -125,6 +125,8 @@ require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapa
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.levelup2' "Mixin loaded the Level Up! 2 late config"
 require 'mixins\.dregorapatches\.lycanites\.json' "FermiumBooter saw the Lycanites late config"
 require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.lycanites' "Mixin loaded the Lycanites late config"
+require 'mixins\.dregorapatches\.sme\.json' "FermiumBooter saw the SoManyEnchantments late config"
+require '\[dregorapatches\]: Mixin config loaded: io\.github\.tidefox\.dregorapatches\.mixin\.sme' "Mixin loaded the SoManyEnchantments late config"
 require '\[dregorapatches\]: Dregora Patches .* ready' "dregorapatches started"
 require '\[dregorapatches\]: /dpatch mixins:' "/dpatch mixins ran"
 require '\[dregorapatches\]: Config reloaded' "/dpatch reload ran"
@@ -136,7 +138,7 @@ if [ "$mods_in" = 1 ]; then
   require 'Level Up! 2 furnace scan - fix on, patched yes' "/dpatch levelup2 stats: patched"
   require 'Lycanites pet recall - fix on, patched yes' "/dpatch lycanites stats: patched"
   require 'dim 0: .*port [0-9]+ frozen' "/dpatch nc stats: placed port is frozen"
-  cfgs="vanilla nc levelup2 lycanites"
+  cfgs="vanilla nc levelup2 lycanites sme"
 else
   require 'Mixin skipped \(target not installed\): .*MixinNCTile' "NC mixin skipped without NuclearCraft"
   cfgs="vanilla"
