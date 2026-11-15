@@ -70,9 +70,13 @@ public final class PatchesConfig {
     }
 
     public static final class Sme {
-        @Config.Comment("Curse of Possession items are only deleted as a death drop. Otherwise, when nobody nearby "
-                + "has room, they stay on the ground as a normal item instead of vanishing after 5 ticks.")
+        @Config.Comment("Curse of Possession items are only deleted as a death drop. Otherwise they go into the closest "
+                + "player's inventory or empty offhand, else stay on the ground as a normal item instead of vanishing after 5 ticks.")
         public boolean possessionNoVoid = true;
+
+        @Config.Comment("On death, a Curse of Possession item goes to the nearest living teammate within 8 blocks "
+                + "with room (inventory, then empty offhand). Solo or nobody has room: deleted as before.")
+        public boolean possessionDeathToTeammate = true;
     }
 
     public static final class TrickShots {

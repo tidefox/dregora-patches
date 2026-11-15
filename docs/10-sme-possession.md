@@ -2,7 +2,7 @@
 
 Status: **built** (2026-11-15): `mixin/sme/MixinCurseOfPossession`; applies on a real Forge 2860 server with the pack's SoManyEnchantments jar (`ci/smoke.sh`). In-game test (§3) still to do with a client.
 
-Goal: an item with **Curse of Possession** can't be thrown away (by design), but must never be deleted by accident. Only the pack's configured death deletion stays.
+Goal: an item with **Curse of Possession** can't be thrown away (by design), but must never be deleted by accident. On death it goes to a nearby teammate; only a solo death (or nobody with room) still deletes it.
 
 Lives in **Dregora Patches** (late mixin config `mixins.dregorapatches.sme.json`). Server-only.
 
@@ -18,17 +18,20 @@ So the "death deletion" also hits every non-death case where nobody nearby has r
 - The remainder of a stack that only partly fits (SME cancels the whole spawn).
 
 ## 2. Fix
-`MixinCurseOfPossession`: `@Inject` at HEAD of `onEntityJoinWorldEvent`, server only, cursed item, curse enabled:
-- closest player creative or **dead** (a death drop: the dead player is still the closest entity) → SME's own code runs unchanged (death deletion stays as configured);
-- otherwise SME's handler is skipped: the item goes into the closest player's inventory if it fits (spawn canceled, a partial fit leaves the rest on the ground), else it stays a **normal drop** (vanilla 5 min, picked up as soon as there's room). The toss fallback still sets no pickup delay + invulnerable.
+`MixinCurseOfPossession`: `@Inject` at HEAD of `onEntityJoinWorldEvent`, server only, cursed item, curse enabled. "Give" = main inventory, then the offhand if it's empty.
+- Closest player creative → SME's code (does nothing).
+- **Death drop** (closest player is dead: they're still in the world, at the drop) → give it to the nearest **living teammate within 8 blocks**, trying the next-nearest if one has no room (spectators skipped). Co-op: the item stays with the team. Solo, or nobody has room → SME's deletion as before (`possessionDeathToTeammate`, default `true`).
+- **Anything else** → give it to the closest player; if it doesn't fit, it stays a **normal drop** (vanilla 5 min, picked up once there's room) instead of vanishing in 5 ticks. A partial fit leaves the rest on the ground. The toss fallback still sets no pickup delay + invulnerable (`possessionNoVoid`, default `true`).
 
-Q / drag-out with room still put the item straight back (SME's toss handler, untouched). Config `sme.possessionNoVoid` (default `true`, `/dpatch reload`). Applied? → `/dpatch mixins`.
+Q / drag-out with room still put the item straight back (SME's toss handler, untouched). Both toggles: `/dpatch reload`. Applied? → `/dpatch mixins`.
 
-Not changed: a death drop with a teammate standing next to you is still deleted (SME only checks the closest player, which is you). Setting `Curse Of Possession Death Deletion = false` in `somanyenchantments.cfg` only changes that to 10 s.
+Corpse Complex (in the pack) edits the death drop list before the items spawn: anything it keeps or destroys never reaches this hook. ⚠ verify in-game that cursed items still drop as items on death.
 
 ## 3. In-game test (needs a client)
 1. Fill the 36 main slots, wear a cursed chestplate, drag it out of the inventory window → it lands at your feet and stays; free a slot → walk over it → picked up.
 2. Same with room in the inventory → goes straight back into the inventory (unchanged).
 3. Q a cursed hotbar item → stays in the inventory (unchanged).
-4. Die holding a cursed item → it's deleted (unchanged, death deletion).
-5. `sme.possessionNoVoid = false` + `/dpatch reload` → step 1 voids the item again.
+4. Die holding a cursed item alone → it's deleted (unchanged, death deletion).
+5. Die holding a cursed item with a teammate within 8 blocks → it lands in their inventory; with their main inventory full → their empty offhand; both full → deleted.
+6. Fill the 36 main slots with an empty offhand, drag cursed armour out → it goes into your offhand.
+7. `sme.possessionNoVoid = false` / `sme.possessionDeathToTeammate = false` + `/dpatch reload` → old behaviour for steps 1 / 5.
