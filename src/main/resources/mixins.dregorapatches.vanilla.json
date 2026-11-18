@@ -8,5 +8,5 @@
   "injectors": {
     "defaultRequire": 0
   },
-  "mixins": ["MixinWorld", "MixinChunkProviderServer", "MixinPlayerList", "MixinEntityPlayerMP"]
+  "mixins": ["MixinWorld", "MixinChunkProviderServer", "MixinPlayerList", "MixinEntityPlayerMP", "MixinEntityArrow"]
 }
