@@ -41,6 +41,11 @@ public final class DebugProbe {
     public static final DebugProbe INSTANCE = new DebugProbe();
 
     private int damageLeft, killLeft, feedLeft;
+    private boolean armorOn;
+    @Nullable
+    private UUID armorTo;
+    /** player uuid + slot -> last serialized armor stack (writeToNBT, so ForgeCaps included). */
+    private final Map<String, String> armorLast = new HashMap<>();
     @Nullable
     private UUID damageTo, killTo;
 
@@ -77,7 +82,16 @@ public final class DebugProbe {
         killTo = to;
     }
 
+    /** {@code debug armor}: log every change to a worn armor stack's full NBT incl. ForgeCaps, until off. */
+    public void armArmor(@Nullable UUID to) {
+        armorOn = true;
+        armorTo = to;
+        armorLast.clear();
+    }
+
     public void off() {
+        armorOn = false;
+        armorLast.clear();
         damageLeft = 0;
         killLeft = 0;
         feedLeft = 0;
@@ -141,7 +155,13 @@ public final class DebugProbe {
 
     @SubscribeEvent
     public void tick(TickEvent.ServerTickEvent e) {
-        if (e.phase != TickEvent.Phase.END || traces.isEmpty()) {
+        if (e.phase != TickEvent.Phase.END) {
+            return;
+        }
+        if (armorOn) {
+            armorTick();
+        }
+        if (traces.isEmpty()) {
             return;
         }
         done.addAll(traces.values());
@@ -156,6 +176,32 @@ public final class DebugProbe {
             report(t.sb.toString(), damageTo);
         }
         done.clear();
+    }
+
+    // ---- armor -------------------------------------------------------------------------
+
+    private void armorTick() {
+        MinecraftServer server = FMLCommonHandler.instance().getMinecraftServerInstance();
+        if (server == null || server.getTickCounter() % 5 != 0) {
+            return;
+        }
+        for (EntityPlayerMP p : server.getPlayerList().getPlayers()) {
+            int slot = 0;
+            for (net.minecraft.item.ItemStack st : p.inventory.armorInventory) {
+                String now = st.isEmpty() ? "-" : st.writeToNBT(new NBTTagCompound()).toString();
+                String key = p.getUniqueID() + "#" + slot++;
+                String was = armorLast.put(key, now);
+                if (was != null && !was.equals(now)) {
+                    report("[dp debug armor] " + p.getName() + " slot " + (slot - 1) + " creative=" + p.isCreative()
+                            + " container=" + p.openContainer.getClass().getSimpleName()
+                            + "\n  was: " + cut(was) + "\n  now: " + cut(now), armorTo);
+                }
+            }
+        }
+    }
+
+    private static String cut(String s) {
+        return s.length() > 700 ? s.substring(0, 700) + "..." : s;
     }
 
     // ---- kill --------------------------------------------------------------------------

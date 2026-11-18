@@ -43,7 +43,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | Piece | Used by |
 |---|---|
 | `combat/ProjectileOrigin` + `combat/ShotTag` — tags arrows on spawn with launcher stack + origin pos + flags (`dregorapatches:shot`) | 03, 06 |
-| `combat/DebugProbe` — `/dpatch debug damage [n]` (hurt at HIGHEST/LOW/LOWEST, canceled?, damage event, health Δ after the tick), `/dpatch debug kill [n]` (registry id, boss flag, NBT/ForgeData/ForgeCaps keys, projectile, shot tag), `/dpatch debug off` | 03, 06 |
+| `combat/DebugProbe` — `/dpatch debug damage [n]` (hurt at HIGHEST/LOW/LOWEST, canceled?, damage event, health Δ after the tick), `/dpatch debug kill [n]` (registry id, boss flag, NBT/ForgeData/ForgeCaps keys, projectile, shot tag), `/dpatch debug armor` (logs every change to a worn armor stack's full NBT incl. ForgeCaps), `/dpatch debug off` | 03, 06 |
 | `util/Chat`, `util/Fmt` — vanilla hovers, item NBT trimming, 30000-char JSON guard; number/text formatting | 03, 06 |
 | `PatchesConfig` — Forge `@Config`, one category per module | all |
 
@@ -54,7 +54,7 @@ Cut to ideas (need client install): `ideas/01-showcase.md`, `ideas/02-pings.md`,
 | `/reactor list`, `/reactor claim [token]`, `/reactor unclaim <id>` | all |
 | `/reactor list -exact`, `/reactor admin list [player] [-exact]`, `/reactor admin unclaim <id>`, `/reactor admin keeploaded <id> on\|off` | op |
 | `/dpatch mixins`, `/dpatch chunkloads <seconds>`, `/dpatch nc stats`, `/dpatch levelup2 stats`, `/dpatch lycanites stats` | op |
-| `/dpatch reload`, `/dpatch debug damage [n]`, `/dpatch debug kill [n]`, `/dpatch debug off` | op |
+| `/dpatch reload`, `/dpatch debug damage [n]`, `/dpatch debug kill [n]`, `/dpatch debug armor`, `/dpatch debug off` | op |
 
 ## Phases
 | Phase | Deliverable | Done when |

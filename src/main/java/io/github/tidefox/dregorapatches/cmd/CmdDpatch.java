@@ -46,7 +46,7 @@ import net.minecraftforge.common.config.ConfigManager;
 public class CmdDpatch extends CommandBase {
 
     private static final String USAGE = "/dpatch mixins | nc stats | levelup2 stats | lycanites stats | chunkloads <seconds> | reload"
-            + " | debug damage [n] | debug kill [n] | debug off";
+            + " | debug damage [n] | debug kill [n] | debug armor | debug off";
 
     @Override
     public String getName() {
@@ -98,6 +98,11 @@ public class CmdDpatch extends CommandBase {
         if (args.length == 2 && "off".equals(args[1])) {
             DebugProbe.INSTANCE.off();
             send(sender, "Debug probe off.");
+            return;
+        }
+        if (args.length == 2 && "armor".equals(args[1])) {
+            DebugProbe.INSTANCE.armArmor(to);
+            send(sender, "Logging changes to every player's worn armor NBT (incl. ForgeCaps) until /dpatch debug off.");
             return;
         }
         if (args.length <= 3 && ("damage".equals(args[1]) || "kill".equals(args[1]))) {
@@ -224,7 +229,7 @@ public class CmdDpatch extends CommandBase {
             return getListOfStringsMatchingLastWord(args, "mixins", "nc", "levelup2", "lycanites", "chunkloads", "reload", "debug");
         }
         if (args.length == 2 && "debug".equals(args[0])) {
-            return getListOfStringsMatchingLastWord(args, "damage", "kill", "off");
+            return getListOfStringsMatchingLastWord(args, "damage", "kill", "armor", "off");
         }
         if (args.length == 2 && ("nc".equals(args[0]) || "levelup2".equals(args[0]) || "lycanites".equals(args[0]))) {
             return getListOfStringsMatchingLastWord(args, "stats");
